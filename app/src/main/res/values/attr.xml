@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Primaire app-kleur (automatisch licht/donker via thema) -->
+    <attr name="colorPrimary" format="color" />
+
+    <!-- Variant voor oppervlakken (cards, overlay, backgrounds) -->
+    <attr name="colorSurfaceVariant" format="color" />
+
+    <!-- Ripple / highlight kleur -->
+    <attr name="colorControlHighlight" format="color" />
+
+</resources>

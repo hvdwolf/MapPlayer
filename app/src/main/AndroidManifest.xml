@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
+
+
+    <application
+        android:allowBackup="true"
+        android:resizeableActivity="true"
+        android:supportsRtl="true"
+        android:label="MapPlayer"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:theme="@style/Theme.MapPlayer" >
+
+        <activity android:name=".ui.folder.FolderBrowserActivity" android:exported="false" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".ui.settings.SettingsActivity" android:exported="false" />
+        <activity android:name=".ui.player.PlayerActivity" android:exported="false" />
+
+        <service
+            android:name=".player.MusicService"
+            android:foregroundServiceType="mediaPlayback"
+            android:exported="false" />
+    </application>
+</manifest>

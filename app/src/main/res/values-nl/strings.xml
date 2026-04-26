@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="folder_cover">Omslagafbeelding</string>
+    <string name="album_art">Albumillustratie</string>
+    <string name="menu">Menu</string>
+
+    <string name="folder_subtitle_default">0 nummers</string>
+    <string name="folder_subtitle">%1$d nummers</string>
+
+    <string name="unknown_artist">Onbekende artiest</string>
+    <string name="unknown_album">Onbekend album</string>
+
+    <string name="song_artist_album">%1$s • %2$s</string>
+
+    <string name="menu_settings">Instellingen</string>
+    <string name="menu_play">Afspelen</string>
+    <string name="menu_play_random">Willekeurig afspelen</string>
+
+</resources>

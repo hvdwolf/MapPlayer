@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="folder_cover">Folder cover image</string>
+    <string name="album_art">…</string>
+    <string name="menu">Menu</string>
+    <string name="folder_subtitle_default">0 tracks</string>
+    <string name="folder_subtitle">%1$d tracks</string>
+
+    <string name="unknown_artist">Unknown artist</string>
+    <string name="unknown_album">Unknown album</string>
+
+    <string name="song_artist_album">%1$s • %2$s</string>
+
+    <string name="menu_settings">Settings</string>
+    <string name="menu_play">Play</string>
+    <string name="menu_play_random">Play in random order</string>
+
+</resources>
