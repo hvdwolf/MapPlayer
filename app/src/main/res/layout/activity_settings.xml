@@ -10,7 +10,7 @@
         android:id="@+id/txtStatus"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Library status"
+        android:text="@string/settings_library_status"
         android:textSize="18sp"
         android:paddingBottom="24dp" />
 
@@ -18,6 +18,6 @@
         android:id="@+id/btnRescan"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Rescan Music Library" />
+        android:text="@string/settings_rescan_library" />
 
 </LinearLayout>

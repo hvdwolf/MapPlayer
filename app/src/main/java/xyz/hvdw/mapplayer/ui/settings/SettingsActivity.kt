@@ -23,12 +23,12 @@ class SettingsActivity : AppCompatActivity() {
         updateStatus()
 
         btnRescan.setOnClickListener {
-            txtStatus.text = "Scanning /storage/emulated/0/Music ..."
+            txtStatus.text = getString(R.string.settings_scanning)
             btnRescan.isEnabled = false
 
             LibraryScanner.scanLibrary(this) {
                 runOnUiThread {
-                    txtStatus.text = "Scan complete"
+                    txtStatus.text = getString(R.string.settings_scan_complete)
                     btnRescan.isEnabled = true
                     MusicRepository.ensureLibraryLoaded(this)
                 }
@@ -38,9 +38,9 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun updateStatus() {
         txtStatus.text = if (MusicRepository.isReady()) {
-            "Library loaded"
+            getString(R.string.settings_library_loaded)
         } else {
-            "Library not loaded"
+            getString(R.string.settings_library_not_loaded)
         }
     }
 }

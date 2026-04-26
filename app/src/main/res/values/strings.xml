@@ -16,4 +16,13 @@
     <string name="menu_play">Play</string>
     <string name="menu_play_random">Play in random order</string>
 
+    <string name="settings_library_status">Library status</string>
+    <string name="settings_rescan_library">Rescan Music Library</string>
+
+    <string name="settings_scanning">Scanning /storage/emulated/0/Music ...</string>
+    <string name="settings_scan_complete">Scan complete</string>
+
+    <string name="settings_library_loaded">Library loaded</string>
+    <string name="settings_library_not_loaded">Library not loaded</string>
+
 </resources>
