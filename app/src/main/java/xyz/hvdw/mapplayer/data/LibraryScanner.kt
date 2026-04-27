@@ -1,6 +1,9 @@
 package xyz.hvdw.mapplayer.data
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.net.Uri
+import java.io.FileOutputStream
 import android.media.MediaMetadataRetriever
 import android.os.Environment
 import android.util.Log
@@ -56,6 +59,7 @@ object LibraryScanner {
 
                 if (musicDir.exists() && musicDir.isDirectory) {
                     scanFolderRecursive(
+                        context = context,
                         dir = musicDir,
                         parentUri = null,
                         folders = folders,
@@ -98,6 +102,7 @@ object LibraryScanner {
     }
 
     private fun scanFolderRecursive(
+        context: Context,
         dir: File,
         parentUri: String?,
         folders: MutableList<LibraryFolder>,
@@ -109,18 +114,49 @@ object LibraryScanner {
         if (!dir.isDirectory || dir.name.startsWith(".")) return
 
         val folderUri = dir.toURI().toString()
-        val coverArtPath = findCoverArtFile(dir)?.absolutePath
+        // 1. Try cover.jpg / folder.jpg
+        var finalCoverArtPath = findCoverArtFile(dir)?.absolutePath
 
+        // 2. Collect audio files in this folder
+        val tracksInThisFolder = dir.listFiles()?.filter { f ->
+            !f.isDirectory && isAudioFile(f.name)
+        } ?: emptyList()
+
+        // 3. If no cover.jpg found → try embedded art from first track
+        if (finalCoverArtPath == null && tracksInThisFolder.isNotEmpty()) {
+            try {
+                val firstTrack = tracksInThisFolder.first()
+                val uri = Uri.parse(firstTrack.toURI().toString())
+
+                val bmp = MusicRepository.loadEmbeddedAlbumArt(context, uri)
+                if (bmp != null) {
+                    val thumb = Bitmap.createScaledBitmap(bmp, 256, 256, true)
+
+                    val outFile = File(context.cacheDir, "thumb_${thumb.hashCode()}.jpg")
+                    FileOutputStream(outFile).use { os ->
+                        thumb.compress(Bitmap.CompressFormat.JPEG, 85, os)
+                    }
+
+                    finalCoverArtPath = outFile.absolutePath
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to extract embedded art for folder ${dir.name}", e)
+            }
+        }
+
+        // 4. Store folder entry
         folders += LibraryFolder(
             uri = folderUri,
             name = dir.name,
             parentUri = parentUri,
-            coverArtPath = coverArtPath
+            coverArtPath = finalCoverArtPath
         )
+
 
         dir.listFiles()?.forEach { f ->
             if (f.isDirectory) {
                 scanFolderRecursive(
+                    context = context,
                     dir = f,
                     parentUri = folderUri,
                     folders = folders,
@@ -160,7 +196,7 @@ object LibraryScanner {
     }
 
     private fun findCoverArtFile(dir: File): File? {
-        val candidates = listOf("cover.jpg", "cover.png", "folder.jpg", "folder.png")
+        val candidates = listOf("cover.jpg", "cover.png", "folder.jpg", "folder.png", "front.jpg", "front.png")
         return dir.listFiles()?.firstOrNull { f ->
             !f.isDirectory && candidates.any { cand ->
                 f.name.equals(cand, ignoreCase = true)

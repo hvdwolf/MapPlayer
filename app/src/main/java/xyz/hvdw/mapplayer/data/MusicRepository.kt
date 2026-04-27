@@ -68,18 +68,24 @@ object MusicRepository {
             .filter { it.folderUri == key }
             .sortedBy { it.title.lowercase() }
             .map { t ->
+                val trackUri = Uri.parse(t.uri)
+
+                // Load embedded art thumbnail for each track
+                val art = loadEmbeddedAlbumArtThumbnail(context, trackUri)
+
                 Track(
-                    uri = Uri.parse(t.uri),
+                    uri = trackUri,
                     title = t.title,
                     artist = t.artist,
                     album = t.album,
-                    albumArt = null
+                    albumArt = art
                 )
             }
 
         callback(list)
         return list
     }
+
 
     fun getTrackCount(context: Context, folderUri: Uri): Int {
         ensureLibraryLoaded(context)
@@ -127,5 +133,11 @@ object MusicRepository {
         val folder = folders.firstOrNull { it.uri == key } ?: return null
         return folder.parentUri?.let { Uri.parse(it) }
     }
+
+    private fun loadEmbeddedAlbumArtThumbnail(context: Context, uri: Uri): Bitmap? {
+        val full = loadEmbeddedAlbumArt(context, uri) ?: return null
+        return Bitmap.createScaledBitmap(full, 256, 256, true)
+    }
+
 
 }
