@@ -17,13 +17,14 @@
     <string name="menu_play">Afspelen</string>
     <string name="menu_play_random">Willekeurig afspelen</string>
 
-    <string name="settings_library_status">Bibliotheekstatus</string>
-    <string name="settings_rescan_library">Muziekbibliotheek opnieuw scannen</string>
-
     <string name="settings_scanning">Bezig met scannen van /storage/emulated/0/Music ...</string>
-    <string name="settings_scan_complete">Scannen voltooid</string>
+    <string name="settings_scanning_subtitle">Dit kan iets langer duren</string>
+    <string name="settings_scanning_progress">Bezig met scannen: %1$d / %2$d bestanden…</string>
 
+    <string name="settings_scan_complete">Scannen voltooid</string>
     <string name="settings_library_loaded">Bibliotheek geladen</string>
     <string name="settings_library_not_loaded">Bibliotheek niet geladen</string>
+    <string name="settings_library_status">Bibliotheekstatus</string>
+    <string name="settings_rescan_library">Muziekbibliotheek opnieuw scannen</string>
 
 </resources>
