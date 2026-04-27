@@ -103,15 +103,54 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Seekbar -->
-    <SeekBar
-        android:id="@+id/seekBar"
+    <!-- Time row + Seekbar -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/timeRow"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:max="1000"
         app:layout_constraintTop_toBottomOf="@id/txtArtist"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/controlsContainer" />
+        app:layout_constraintBottom_toTopOf="@id/controlsContainer">
+
+        <!-- Current time (left) -->
+        <TextView
+            android:id="@+id/txtCurrentTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0:00"
+            android:textSize="14sp"
+            android:textColor="?attr/colorOnSurface"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+        <!-- Total time (right) -->
+        <TextView
+            android:id="@+id/txtTotalTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0:00"
+            android:textSize="14sp"
+            android:textColor="?attr/colorOnSurface"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+        <!-- Seekbar (center, fills remaining space) -->
+        <SeekBar
+            android:id="@+id/seekBar"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:max="1000"
+            app:layout_constraintStart_toEndOf="@id/txtCurrentTime"
+            app:layout_constraintEnd_toStartOf="@id/txtTotalTime"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -34,6 +34,8 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var imgAlbumArt: ImageView
     private lateinit var txtTitle: TextView
     private lateinit var txtArtist: TextView
+    private lateinit var txtCurrentTime: TextView
+    private lateinit var txtTotalTime: TextView
     private lateinit var seekBar: SeekBar
     private lateinit var btnExit: ImageButton
     private lateinit var btnPrev: ImageButton
@@ -80,6 +82,8 @@ class PlayerActivity : AppCompatActivity() {
         imgAlbumArt = findViewById(R.id.imgAlbumArt)
         txtTitle = findViewById(R.id.txtTitle)
         txtArtist = findViewById(R.id.txtArtist)
+        txtCurrentTime = findViewById(R.id.txtCurrentTime)
+        txtTotalTime = findViewById(R.id.txtTotalTime)
         seekBar = findViewById(R.id.seekBar)
         btnExit = findViewById(R.id.btnExit)
         btnPrev = findViewById(R.id.btnPrev)
@@ -106,7 +110,7 @@ class PlayerActivity : AppCompatActivity() {
                 if (fromUser) {
                     val duration = service?.getDuration() ?: 0L
                     val newPos = (duration * progress / 1000L)
-                    service?.playerSeekTo(newPos)   // <-- This is valid because MusicService already has this
+                    service?.playerSeekTo(newPos)
                 }
             }
 
@@ -133,7 +137,7 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     // --------------------------------------------------------------------
-    // PLAYBACK START + ALBUM ART PASSING TO MUSICSERVICE
+    // PLAYBACK START
     // --------------------------------------------------------------------
     private fun startPlaybackIfNeeded() {
         val folderUriStr = intent.getStringExtra(EXTRA_FOLDER_URI) ?: return
@@ -157,21 +161,6 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
-
-    private fun sendAlbumArtToService(track: Track) {
-        Thread {
-            val bmp = track.albumArt ?: MusicRepository.loadEmbeddedAlbumArt(this, track.uri)
-            if (bmp != null) {
-                track.albumArt = bmp
-
-                val intent = Intent(this, MusicService::class.java)
-                intent.action = "ACTION_UPDATE_ALBUM_ART"
-                intent.putExtra("ALBUM_ART", bmp as Bitmap)
-                startService(intent)
-            }
-        }.start()
-    }
-
     // --------------------------------------------------------------------
     // UI UPDATES
     // --------------------------------------------------------------------
@@ -181,10 +170,14 @@ class PlayerActivity : AppCompatActivity() {
         txtTitle.text = track.title
         txtArtist.text = track.artist ?: track.album ?: ""
 
+        // Reset time labels for new track
+        txtCurrentTime.text = "0:00"
+        txtTotalTime.text = formatTime(service?.getDuration() ?: 0L)
+
+        // Album art
         if (track.albumArt != null) {
             imgAlbumArt.setImageBitmap(track.albumArt)
         } else {
-            // Load embedded album art in background
             Thread {
                 val bmp = MusicRepository.loadEmbeddedAlbumArt(this, track.uri)
 
@@ -193,8 +186,6 @@ class PlayerActivity : AppCompatActivity() {
 
                     runOnUiThread {
                         imgAlbumArt.setImageBitmap(bmp)
-
-                        // Tell MusicService to refresh MediaSession + notification
                         service?.refreshMetadata()
                     }
                 } else {
@@ -204,7 +195,6 @@ class PlayerActivity : AppCompatActivity() {
                 }
             }.start()
         }
-
 
         updatePlayPauseIcon()
         updateProgress()
@@ -216,13 +206,28 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun updateProgress() {
-        val duration = service?.getDuration() ?: 0L
-        val position = service?.getPosition() ?: 0L
+        val svc = service ?: return
+
+        val duration = svc.getDuration()
+        val position = svc.getPosition()
+
+        // Seekbar
         if (duration > 0) {
             val progress = (position * 1000L / duration).toInt()
             seekBar.progress = progress
         } else {
             seekBar.progress = 0
         }
+
+        // Time labels
+        txtCurrentTime.text = formatTime(position)
+        txtTotalTime.text = formatTime(duration)
+    }
+
+    private fun formatTime(ms: Long): String {
+        val totalSeconds = ms / 1000
+        val minutes = totalSeconds / 60
+        val seconds = totalSeconds % 60
+        return String.format("%d:%02d", minutes, seconds)
     }
 }
