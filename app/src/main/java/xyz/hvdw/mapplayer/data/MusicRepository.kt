@@ -66,7 +66,10 @@ object MusicRepository {
 
         val list = tracks
             .filter { it.folderUri == key }
-            .sortedBy { it.title.lowercase() }
+            .sortedBy { t ->
+                // Sort by filename, not metadata title
+                Uri.parse(t.uri).lastPathSegment?.lowercase() ?: ""
+            }
             .map { t ->
                 val trackUri = Uri.parse(t.uri)
 

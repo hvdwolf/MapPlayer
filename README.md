@@ -5,7 +5,7 @@ A simple folder-based music player for Android based on the new Google ExoPlayer
 ### Features
 * Plays all audio files in a folder, sorted by filename (natural sorting)
 * Regular file browser navigation
-* After first start you manually need to do an initial library scan from the Settings menu. (Is this a feature or  non-feature?)
+* After first start you manually need to do an initial library scan from the Settings menu. (Is this a feature or a not-feature?). If you add new folders/files or remove files/folders, do a rescan.
 * Show album art
 * Play File, Play folder, Play folder in random order
 * Shuffle mode: Play folder in random order
@@ -20,7 +20,8 @@ A simple folder-based music player for Android based on the new Google ExoPlayer
 * No equalizer
 * No repeat options
 * No sorting options
-* No casting support
 
 ### Disclaimer
-I created this app entirely for myself. If you or anyone else finds it useful, then that makes me happy. I'm not going to implement any feature requests, unless I personally want/need them.
+I created this app entirely for myself and my wife. We have our entire collection in folders.  
+If you find it useful, then use it and be happy. I will be too.  
+I'm not going to implement any feature requests, unless I personally want/need them.
