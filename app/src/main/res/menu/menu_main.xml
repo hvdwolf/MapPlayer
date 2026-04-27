@@ -2,6 +2,7 @@
     <item
         android:id="@+id/action_settings"
         android:title="@string/menu_settings"
+        android:textStyle="bold"
         android:icon="@drawable/ic_settings"
         android:showAsAction="never" />
 </menu>

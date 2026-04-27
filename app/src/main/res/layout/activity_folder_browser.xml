@@ -11,8 +11,8 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="?attr/colorPrimary"
-        android:theme="@style/ThemeOverlay.Material3.ActionBar"
-        android:popupTheme="@style/MapPlayer.PopupMenu"
+        app:theme="@style/Theme.MapPlayer.Toolbar"
+        app:popupTheme="@style/MapPlayer.PopupMenu"
         app:title="MapPlayer"
         app:menu="@menu/menu_main" />
 

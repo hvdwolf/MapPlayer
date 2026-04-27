@@ -1,16 +1,40 @@
 <resources>
 
+    <!-- MAIN APP THEME (required by manifest) -->
     <style name="Theme.MapPlayer" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="android:forceDarkAllowed">true</item>
+        <!-- Your brand colors -->
+        <item name="colorPrimary">@color/deep_purple_500</item>
+        <item name="colorOnPrimary">@android:color/white</item>
 
-        <!-- Force dark text/icons on light surfaces -->
-        <item name="colorOnSurface">@android:color/black</item>
-        <item name="colorOnPrimary">@android:color/black</item>
+        <!-- Toolbar + buttons use white icons/text -->
+        <item name="android:colorControlNormal">@android:color/white</item>
     </style>
 
+    <!-- TOOLBAR THEME -->
+    <style name="Theme.MapPlayer.Toolbar" parent="ThemeOverlay.Material3.Dark.ActionBar">
+        <item name="android:textColorPrimary">@android:color/white</item>
+        <item name="titleTextColor">@android:color/white</item>
+        <item name="subtitleTextColor">@android:color/white</item>
+        <item name="navigationIconTint">@android:color/white</item>
+        <item name="android:colorControlNormal">@android:color/white</item>
+    </style>
+
+    <!-- BUTTON THEME -->
+    <style name="Widget.MapPlayer.Button" parent="Widget.Material3.Button">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="backgroundTint">?attr/colorPrimary</item>
+    </style>
+
+    <!-- POPUP MENU THEME (light popup with dark text) -->
     <style name="MapPlayer.PopupMenu" parent="ThemeOverlay.Material3.Light">
         <item name="colorOnSurface">@android:color/black</item>
         <item name="colorSurface">@android:color/white</item>
     </style>
+
+    <style name="MapPlayer.PopupMenu.Dark" parent="ThemeOverlay.Material3.Dark">
+        <item name="colorSurface">@color/deep_purple_500</item>
+        <item name="colorOnSurface">@android:color/white</item>
+    </style>
+
 
 </resources>

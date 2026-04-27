@@ -15,7 +15,8 @@
         app:navigationIcon="@drawable/ic_back"
         app:title="@string/menu_settings"
         app:titleCentered="false"
-        app:titleTextColor="?attr/colorOnSurface" />
+        app:titleTextColor="?attr/colorOnSurface"
+        app:navigationIconTint="?attr/colorOnSurface" />
 
     <TextView
         android:id="@+id/txtStatus"
@@ -53,6 +54,7 @@
 
     <Button
         android:id="@+id/btnRescan"
+        style="@style/Widget.MapPlayer.Button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/settings_rescan_library"
