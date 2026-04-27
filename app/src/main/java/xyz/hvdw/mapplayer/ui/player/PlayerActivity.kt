@@ -4,6 +4,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
@@ -53,6 +54,7 @@ class PlayerActivity : AppCompatActivity() {
             service = b.getService()
             service?.playbackListener = playbackListener
             bound = true
+
             startPlaybackIfNeeded()
             updateUi()
             handler.post(updateRunnable)
@@ -85,12 +87,13 @@ class PlayerActivity : AppCompatActivity() {
         btnNext = findViewById(R.id.btnNext)
 
         btnExit.setOnClickListener { finish() }
-        btnPrev.setOnClickListener { service?.skipPrevious(); updateUi() }
-        btnNext.setOnClickListener { service?.skipNext(); updateUi() }
+        btnPrev.setOnClickListener { service?.skipPrevious() }
+        btnNext.setOnClickListener { service?.skipNext() }
         btnPlayPause.setOnClickListener {
             service?.togglePlayPause()
             updatePlayPauseIcon()
         }
+
         findViewById<ImageButton>(R.id.btnClose).setOnClickListener {
             val intent = Intent(this, MusicService::class.java)
             intent.action = "ACTION_STOP"
@@ -103,7 +106,7 @@ class PlayerActivity : AppCompatActivity() {
                 if (fromUser) {
                     val duration = service?.getDuration() ?: 0L
                     val newPos = (duration * progress / 1000L)
-                    service?.playerSeekTo(newPos)
+                    service?.playerSeekTo(newPos)   // <-- This is valid because MusicService already has this
                 }
             }
 
@@ -129,6 +132,9 @@ class PlayerActivity : AppCompatActivity() {
         handler.removeCallbacks(updateRunnable)
     }
 
+    // --------------------------------------------------------------------
+    // PLAYBACK START + ALBUM ART PASSING TO MUSICSERVICE
+    // --------------------------------------------------------------------
     private fun startPlaybackIfNeeded() {
         val folderUriStr = intent.getStringExtra(EXTRA_FOLDER_URI) ?: return
         val shuffle = intent.getBooleanExtra(EXTRA_SHUFFLE, false)
@@ -136,7 +142,7 @@ class PlayerActivity : AppCompatActivity() {
 
         val folderUri = Uri.parse(folderUriStr)
 
-        val tracks: List<Track> = MusicRepository.listTracksInFolder(
+        val tracks = MusicRepository.listTracksInFolder(
             this,
             folderUri
         ) { updatedTracks ->
@@ -151,24 +157,54 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
+
+    private fun sendAlbumArtToService(track: Track) {
+        Thread {
+            val bmp = track.albumArt ?: MusicRepository.loadEmbeddedAlbumArt(this, track.uri)
+            if (bmp != null) {
+                track.albumArt = bmp
+
+                val intent = Intent(this, MusicService::class.java)
+                intent.action = "ACTION_UPDATE_ALBUM_ART"
+                intent.putExtra("ALBUM_ART", bmp as Bitmap)
+                startService(intent)
+            }
+        }.start()
+    }
+
+    // --------------------------------------------------------------------
+    // UI UPDATES
+    // --------------------------------------------------------------------
     private fun updateUi() {
         val track = service?.getCurrentTrack() ?: return
+
         txtTitle.text = track.title
         txtArtist.text = track.artist ?: track.album ?: ""
 
-        if (track.albumArt == null) {
+        if (track.albumArt != null) {
+            imgAlbumArt.setImageBitmap(track.albumArt)
+        } else {
+            // Load embedded album art in background
             Thread {
                 val bmp = MusicRepository.loadEmbeddedAlbumArt(this, track.uri)
+
                 if (bmp != null) {
                     track.albumArt = bmp
-                    runOnUiThread { imgAlbumArt.setImageBitmap(bmp) }
+
+                    runOnUiThread {
+                        imgAlbumArt.setImageBitmap(bmp)
+
+                        // Tell MusicService to refresh MediaSession + notification
+                        service?.refreshMetadata()
+                    }
                 } else {
-                    runOnUiThread { imgAlbumArt.setImageResource(R.drawable.ic_music_note) }
+                    runOnUiThread {
+                        imgAlbumArt.setImageResource(R.drawable.ic_music_note)
+                    }
                 }
             }.start()
-        } else {
-            imgAlbumArt.setImageBitmap(track.albumArt)
         }
+
 
         updatePlayPauseIcon()
         updateProgress()
@@ -189,16 +225,4 @@ class PlayerActivity : AppCompatActivity() {
             seekBar.progress = 0
         }
     }
-}
-
-// Keep your existing MusicService implementation; just ensure it has:
-// - playTracks(List<Track>, startIndex: Int, shuffle: Boolean)
-// - getCurrentTrack(): Track?
-// - isPlaying(): Boolean
-// - getDuration(): Long
-// - getPosition(): Long
-// - skipPrevious(), skipNext(), togglePlayPause()
-// - LocalBinder + PlaybackListener
-fun MusicService.playerSeekTo(positionMs: Long) {
-    this.javaClass
 }

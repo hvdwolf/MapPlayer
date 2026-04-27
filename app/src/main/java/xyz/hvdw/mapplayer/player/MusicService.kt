@@ -9,7 +9,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
-//import android.graphics.BitmapFactory
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
@@ -34,6 +33,12 @@ class MusicService : Service() {
     companion object {
         private const val CHANNEL_ID = "map_player_channel"
         private const val NOTIFICATION_ID = 1
+
+        const val ACTION_UPDATE_ALBUM_ART = "ACTION_UPDATE_ALBUM_ART"
+        const val ACTION_PREV = "ACTION_PREV"
+        const val ACTION_NEXT = "ACTION_NEXT"
+        const val ACTION_TOGGLE = "ACTION_TOGGLE"
+        const val ACTION_STOP = "ACTION_STOP"
     }
 
     inner class LocalBinder : Binder() {
@@ -49,6 +54,8 @@ class MusicService : Service() {
     private var shuffledQueue: MutableList<Track> = mutableListOf()
     private var currentIndex: Int = 0
     private var shuffle: Boolean = false
+
+    //private var currentTrack: Track? = null
 
     var playbackListener: PlaybackListener? = null
 
@@ -87,9 +94,6 @@ class MusicService : Service() {
         player.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
                 updatePlaybackState()
-                //if (state == Player.STATE_ENDED) {
-                //    skipNext()
-                //}
             }
         })
     }
@@ -103,7 +107,7 @@ class MusicService : Service() {
     }
 
     // ---------------------------------------------------------
-    // PLAYBACK CONTROL (our own shuffle, our own queue)
+    // PLAYBACK CONTROL
     // ---------------------------------------------------------
 
     fun playTracks(tracks: List<Track>, startIndex: Int, shuffle: Boolean) {
@@ -136,12 +140,32 @@ class MusicService : Service() {
         player.prepare()
         player.playWhenReady = true
 
+        // Show placeholder or existing art immediately
         updateMetadata(track)
         startForegroundWithNotification()
 
-        // Notify PlayerActivity that the track changed
+        // Load embedded album art in background
+        Thread {
+            if (track.albumArt == null) {
+                val bmp = xyz.hvdw.mapplayer.data.MusicRepository
+                    .loadEmbeddedAlbumArt(this, track.uri)
+
+                if (bmp != null) {
+                    track.albumArt = bmp
+
+                    // Update metadata + notification on main thread
+                    val mainHandler = android.os.Handler(mainLooper)
+                    mainHandler.post {
+                        updateMetadata(track)
+                        updateNotification()
+                    }
+                }
+            }
+        }.start()
+
         playbackListener?.onTrackChanged()
     }
+
 
     fun skipNext() {
         val list = if (shuffle) shuffledQueue else queue
@@ -176,20 +200,23 @@ class MusicService : Service() {
     fun getPosition(): Long = player.currentPosition
     fun isPlaying(): Boolean = player.isPlaying
 
+    fun playerSeekTo(positionMs: Long) {
+        player.seekTo(positionMs)
+    }
+
     // ---------------------------------------------------------
     // METADATA + NOTIFICATION
     // ---------------------------------------------------------
 
     private fun updateMetadata(track: Track) {
-        // Use embedded art if available, otherwise load placeholder
-        val albumArtBitmap = track.albumArt
-            ?: vectorToBitmap(R.drawable.ic_music_note_placeholder)
+        val art = track.albumArt ?: vectorToBitmap(R.drawable.ic_music_note_placeholder)
 
         val metadata = MediaMetadataCompat.Builder()
             .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track.title)
             .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, track.artist ?: "Unknown artist")
             .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, track.album ?: "Unknown album")
-            .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, albumArtBitmap)
+            .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, art)
+            .putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON, art)
             .build()
 
         mediaSession.setMetadata(metadata)
@@ -258,17 +285,17 @@ class MusicService : Service() {
 
         val prevIntent = PendingIntent.getService(
             this, 1,
-            Intent(this, MusicService::class.java).setAction("ACTION_PREV"),
+            Intent(this, MusicService::class.java).setAction(ACTION_PREV),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         val playIntent = PendingIntent.getService(
             this, 2,
-            Intent(this, MusicService::class.java).setAction("ACTION_TOGGLE"),
+            Intent(this, MusicService::class.java).setAction(ACTION_TOGGLE),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         val nextIntent = PendingIntent.getService(
             this, 3,
-            Intent(this, MusicService::class.java).setAction("ACTION_NEXT"),
+            Intent(this, MusicService::class.java).setAction(ACTION_NEXT),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -294,15 +321,19 @@ class MusicService : Service() {
         mgr.notify(NOTIFICATION_ID, notification)
     }
 
+    // ---------------------------------------------------------
+    // ACTION HANDLING (INCLUDING ALBUM ART UPDATE)
+    // ---------------------------------------------------------
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            "ACTION_PREV" -> skipPrevious()
-            "ACTION_NEXT" -> skipNext()
-            "ACTION_TOGGLE" -> togglePlayPause()
-            "ACTION_STOP" -> stopAndRelease()
+            ACTION_PREV -> skipPrevious()
+            ACTION_NEXT -> skipNext()
+            ACTION_TOGGLE -> togglePlayPause()
+            ACTION_STOP -> stopAndRelease()
         }
         return START_STICKY
     }
+
 
     fun stopAndRelease() {
         player.stop()
@@ -311,39 +342,9 @@ class MusicService : Service() {
         stopSelf()
     }
 
-    private fun smartShuffle(tracks: List<Track>): MutableList<Track> {
-        if (tracks.size <= 1) return tracks.toMutableList()
-
-        val pool = tracks.shuffled().toMutableList()
-        val result = mutableListOf<Track>()
-
-        // Detect if constraints are meaningful
-        val multipleArtists = pool.map { it.artist ?: "" }.distinct().size > 1
-        val multipleAlbums = pool.map { it.album ?: "" }.distinct().size > 1
-
-        // Always pick a random first track
-        result.add(pool.removeAt(0))
-
-        while (pool.isNotEmpty()) {
-            val last = result.last()
-
-            val candidate = pool.firstOrNull { t ->
-                (!multipleArtists || (t.artist ?: "") != (last.artist ?: "")) &&
-                (!multipleAlbums || (t.album ?: "") != (last.album ?: ""))
-            }
-
-            if (candidate != null) {
-                result.add(candidate)
-                pool.remove(candidate)
-                continue
-            }
-
-            // No constraint‑satisfying track → fallback to any remaining
-            result.add(pool.removeAt(0))
-        }
-
-        return result
-    }
+    // ---------------------------------------------------------
+    // UTIL
+    // ---------------------------------------------------------
 
     private fun vectorToBitmap(drawableId: Int): Bitmap {
         val drawable = resources.getDrawable(drawableId, null)
@@ -356,6 +357,12 @@ class MusicService : Service() {
         drawable.setBounds(0, 0, canvas.width, canvas.height)
         drawable.draw(canvas)
         return bitmap
+    }
+
+    fun refreshMetadata() {
+        val track = getCurrentTrack() ?: return
+        updateMetadata(track)
+        updateNotification()
     }
 
 }
