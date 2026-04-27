@@ -94,8 +94,14 @@ class MusicService : Service() {
         player.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
                 updatePlaybackState()
+
+                if (state == Player.STATE_ENDED) {
+                    // Track finished → move to next
+                    skipNext()
+                }
             }
         })
+
     }
 
     override fun onBind(intent: Intent?): IBinder = binder

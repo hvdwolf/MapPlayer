@@ -143,6 +143,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:max="1000"
+            android:progressTint="?attr/colorPrimary"
+            android:progressBackgroundTint="?attr/colorOutline"
             app:layout_constraintStart_toEndOf="@id/txtCurrentTime"
             app:layout_constraintEnd_toStartOf="@id/txtTotalTime"
             app:layout_constraintTop_toTopOf="parent"
