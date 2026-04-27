@@ -1,6 +1,9 @@
 package xyz.hvdw.mapplayer.ui.folder
 
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -11,6 +14,7 @@ import android.view.View
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
@@ -38,6 +42,14 @@ class FolderBrowserActivity : AppCompatActivity(),
     private lateinit var progressScanning: ProgressBar
 
     private lateinit var gestureDetector: GestureDetector
+
+    // ⭐ ADDED — broadcast receiver to refresh UI when library updates
+    private val libraryUpdatedReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            Log.d("MapPlayer", "Library updated → refreshing folder browser")
+            reloadContent()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,6 +80,12 @@ class FolderBrowserActivity : AppCompatActivity(),
             event?.let { gestureDetector.onTouchEvent(it) }
             false
         }
+
+        // ⭐ ADDED — listen for library updates
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+            libraryUpdatedReceiver,
+            IntentFilter("ACTION_LIBRARY_UPDATED")
+        )
 
         if (!PermissionManager.hasAllPermissions(this)) {
             PermissionManager.requestPermissions(this)
@@ -143,6 +161,11 @@ class FolderBrowserActivity : AppCompatActivity(),
         recyclerView.adapter = FolderAdapter(emptyList(), this)
     }
 
+    // ⭐ ADDED — reload current folder after library update
+    private fun reloadContent() {
+        loadContent(currentFolderUri)
+    }
+
     override fun onFolderClick(folder: FolderItem) {
         currentFolderUri = folder.uri
         loadContent(folder.uri)
@@ -179,5 +202,9 @@ class FolderBrowserActivity : AppCompatActivity(),
         }
     }
 
-
+    override fun onDestroy() {
+        super.onDestroy()
+        // ⭐ ADDED — clean up receiver
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(libraryUpdatedReceiver)
+    }
 }

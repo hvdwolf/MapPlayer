@@ -1,11 +1,13 @@
 package xyz.hvdw.mapplayer.ui.settings
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.appbar.MaterialToolbar
 import xyz.hvdw.mapplayer.R
 import xyz.hvdw.mapplayer.data.LibraryScanner
@@ -53,10 +55,17 @@ class SettingsActivity : AppCompatActivity() {
                 }
             ) {
                 runOnUiThread {
+                    // Reload the freshly written library.json
+                    MusicRepository.loadLibraryFromJson(this)
+
+                    // Notify FolderBrowserActivity to refresh its UI
+                    LocalBroadcastManager.getInstance(this).sendBroadcast(
+                        Intent("ACTION_LIBRARY_UPDATED")
+                    )
+
                     hideScanningUI()
                     txtStatus.text = getString(R.string.settings_scan_complete)
                     txtProgress.visibility = View.GONE
-                    MusicRepository.ensureLibraryLoaded(this)
                 }
             }
         }
