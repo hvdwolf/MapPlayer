@@ -146,7 +146,7 @@ class PlayerActivity : AppCompatActivity() {
 
         val folderUri = Uri.parse(folderUriStr)
 
-        val tracks = MusicRepository.listTracksInFolder(
+        MusicRepository.listTracksInFolder(
             this,
             folderUri
         ) { updatedTracks ->
@@ -156,9 +156,9 @@ class PlayerActivity : AppCompatActivity() {
             }
         }
 
-        if (tracks.isNotEmpty()) {
+        /* if (tracks.isNotEmpty()) {
             service?.playTracks(tracks, startIndex, shuffle)
-        }
+        }*/
     }
 
     // --------------------------------------------------------------------

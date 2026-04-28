@@ -141,7 +141,7 @@ class FolderBrowserActivity : AppCompatActivity(),
         }
 
         if (folderUri != null) {
-            val tracks = MusicRepository.listTracksInFolder(
+            MusicRepository.listTracksInFolder(
                 this,
                 folderUri
             ) { updatedTracks ->
@@ -152,9 +152,9 @@ class FolderBrowserActivity : AppCompatActivity(),
                 }
             }
 
-            val adapter = SongAdapter(tracks, this)
+            /* val adapter = SongAdapter(tracks, this)
             adapter.setShuffle(false)
-            recyclerView.adapter = adapter
+            recyclerView.adapter = adapter */
             return
         }
 
