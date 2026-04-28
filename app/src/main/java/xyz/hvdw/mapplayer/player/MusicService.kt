@@ -92,11 +92,27 @@ class MusicService : Service() {
         }
 
         player.addListener(object : Player.Listener {
+
+            override fun onTimelineChanged(
+                timeline: com.google.android.exoplayer2.Timeline,
+                reason: Int
+            ) {
+                updatePlaybackState()
+                getCurrentTrack()?.let { updateMetadata(it) }
+            }
+
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                updatePlaybackState()
+            }
+
+            override fun onPositionDiscontinuity(reason: Int) {
+        updatePlaybackState()
+            }
+
             override fun onPlaybackStateChanged(state: Int) {
                 updatePlaybackState()
 
                 if (state == Player.STATE_ENDED) {
-                    // Track finished → move to next
                     skipNext()
                 }
             }
@@ -217,37 +233,45 @@ class MusicService : Service() {
     private fun updateMetadata(track: Track) {
         val art = track.albumArt ?: vectorToBitmap(R.drawable.ic_music_note_placeholder)
 
+        val durationMs = player.duration.takeIf { it > 0 } ?: 0L
+
         val metadata = MediaMetadataCompat.Builder()
             .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track.title)
             .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, track.artist ?: "Unknown artist")
             .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, track.album ?: "Unknown album")
             .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, art)
             .putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON, art)
+            .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, durationMs)
             .build()
 
         mediaSession.setMetadata(metadata)
     }
 
     private fun updatePlaybackState() {
-        val state = if (player.isPlaying) {
-            PlaybackStateCompat.STATE_PLAYING
-        } else {
-            PlaybackStateCompat.STATE_PAUSED
-        }
+        val isPlaying = player.isPlaying
+        val position = player.currentPosition
+        val buffered = player.bufferedPosition
 
         val playbackState = PlaybackStateCompat.Builder()
             .setActions(
                 PlaybackStateCompat.ACTION_PLAY or
-                        PlaybackStateCompat.ACTION_PAUSE or
-                        PlaybackStateCompat.ACTION_PLAY_PAUSE or
-                        PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
-                        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
+                PlaybackStateCompat.ACTION_PAUSE or
+                PlaybackStateCompat.ACTION_PLAY_PAUSE or
+                PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+                PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
+                PlaybackStateCompat.ACTION_SEEK_TO
             )
-            .setState(state, player.currentPosition, 1.0f)
+            .setState(
+                if (isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED,
+                position,
+                1.0f
+            )
+            .setBufferedPosition(buffered)
             .build()
 
         mediaSession.setPlaybackState(playbackState)
     }
+
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

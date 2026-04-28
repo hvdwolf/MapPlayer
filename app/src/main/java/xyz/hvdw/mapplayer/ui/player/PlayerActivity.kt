@@ -156,9 +156,6 @@ class PlayerActivity : AppCompatActivity() {
             }
         }
 
-        /* if (tracks.isNotEmpty()) {
-            service?.playTracks(tracks, startIndex, shuffle)
-        }*/
     }
 
     // --------------------------------------------------------------------

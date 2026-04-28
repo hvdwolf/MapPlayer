@@ -73,7 +73,14 @@ class FolderBrowserActivity : AppCompatActivity(),
         recyclerView.setSaveEnabled(false)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
+        // If no folder was passed, default to the Music directory
         currentFolderUri = intent.getStringExtra(EXTRA_FOLDER_URI)?.let { Uri.parse(it) }
+            ?: run {
+                val musicDir = android.os.Environment.getExternalStoragePublicDirectory(
+                    android.os.Environment.DIRECTORY_MUSIC
+                )
+                musicDir.toURI().toString().let { Uri.parse(it) }
+            }
 
         setupGestureDetector()
         findViewById<View>(R.id.rootFolderBrowser).setOnTouchListener { _, event ->
