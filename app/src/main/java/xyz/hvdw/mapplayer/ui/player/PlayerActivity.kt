@@ -57,10 +57,20 @@ class PlayerActivity : AppCompatActivity() {
             service?.playbackListener = playbackListener
             bound = true
 
+            // If service is already playing, DO NOT restart playback
+            if (service?.getCurrentTrack() != null) {
+                updateUi()
+                handler.post(updateRunnable)
+                return
+            }
+
+            // Only start playback if nothing is playing yet
             startPlaybackIfNeeded()
+
             updateUi()
             handler.post(updateRunnable)
         }
+
 
         override fun onServiceDisconnected(name: ComponentName?) {
             bound = false
@@ -140,6 +150,14 @@ class PlayerActivity : AppCompatActivity() {
     // PLAYBACK START
     // --------------------------------------------------------------------
     private fun startPlaybackIfNeeded() {
+        val svc = service ?: return
+
+        // If service is already playing something, DO NOT restart playback
+        if (svc.getCurrentTrack() != null) {
+            updateUi()
+            return
+        }
+
         val folderUriStr = intent.getStringExtra(EXTRA_FOLDER_URI) ?: return
         val shuffle = intent.getBooleanExtra(EXTRA_SHUFFLE, false)
         val startIndex = intent.getIntExtra(EXTRA_START_INDEX, 0)
@@ -151,12 +169,12 @@ class PlayerActivity : AppCompatActivity() {
             folderUri
         ) { updatedTracks ->
             if (updatedTracks.isNotEmpty()) {
-                service?.playTracks(updatedTracks, startIndex, shuffle)
+                svc.playTracks(updatedTracks, startIndex, shuffle)
                 runOnUiThread { updateUi() }
             }
         }
-
     }
+
 
     // --------------------------------------------------------------------
     // UI UPDATES
