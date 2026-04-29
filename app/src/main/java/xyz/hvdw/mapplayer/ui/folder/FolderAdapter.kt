@@ -1,6 +1,7 @@
 package xyz.hvdw.mapplayer.ui.folder
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -58,7 +59,9 @@ class FolderAdapter(
             if (thumb != null) {
                 image.setImageBitmap(thumb)
             } else {
-                image.setImageResource(R.drawable.ic_folder_music)
+                //image.setImageResource(R.drawable.ic_folder_music)
+                val bitmap = BitmapFactory.decodeResource(context.resources, R.raw.ic_launcher_blue)
+                image.setImageBitmap(bitmap)
             }
 
             // Row click

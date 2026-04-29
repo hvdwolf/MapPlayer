@@ -3,7 +3,7 @@
     <!-- MAIN APP THEME (required by manifest) -->
     <style name="Theme.MapPlayer" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Your brand colors -->
-        <item name="colorPrimary">@color/deep_purple_500</item>
+        <item name="colorPrimary">@color/my_deep_blue</item>
         <item name="colorOnPrimary">@android:color/white</item>
 
         <!-- Toolbar + buttons use white icons/text -->
@@ -32,7 +32,7 @@
     </style>
 
     <style name="MapPlayer.PopupMenu.Dark" parent="ThemeOverlay.Material3.Dark">
-        <item name="colorSurface">@color/deep_purple_500</item>
+        <item name="colorSurface">@color/my_deep_blue</item>
         <item name="colorOnSurface">@android:color/white</item>
     </style>
 
