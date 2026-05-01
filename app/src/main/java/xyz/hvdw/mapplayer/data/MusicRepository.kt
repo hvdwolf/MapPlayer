@@ -10,13 +10,15 @@ import xyz.hvdw.mapplayer.model.FolderItem
 import xyz.hvdw.mapplayer.model.Track
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
+import xyz.hvdw.mapplayer.data.LibraryTrack
 
 object MusicRepository {
 
     private val libraryLoaded = AtomicBoolean(false)
 
     private var folders: List<LibraryScanner.LibraryFolder> = emptyList()
-    private var tracks: List<LibraryScanner.LibraryTrack> = emptyList()
+    private var tracks: List<LibraryTrack> = emptyList()
+
 
     fun loadLibraryFromJson(context: Context) {
         val db = LibraryScanner.loadLibrary(context) ?: return
@@ -65,23 +67,22 @@ object MusicRepository {
         val key = folderUri.toString()
 
         val list = tracks
-            .filter { it.folderUri == key }
-            .sortedBy { t ->
+            .filter { t: LibraryTrack -> t.folderUri == key }
+            .sortedBy { t: LibraryTrack ->
                 // Sort by filename, not metadata title
                 Uri.parse(t.uri).lastPathSegment?.lowercase() ?: ""
             }
-            .map { t ->
-                val trackUri = Uri.parse(t.uri)
-
-                // Load embedded art thumbnail for each track
-                val art = loadEmbeddedAlbumArtThumbnail(context, trackUri)
+            .map { t: LibraryTrack ->
+                val bmp = t.thumbnailPath?.let { path ->
+                    BitmapFactory.decodeFile(path)
+                }
 
                 Track(
-                    uri = trackUri,
-                    title = t.title,
+                    uri = Uri.parse(t.uri),
+                    title = t.title ?: "",
                     artist = t.artist,
                     album = t.album,
-                    albumArt = art
+                    albumArt = bmp
                 )
             }
 
@@ -89,11 +90,10 @@ object MusicRepository {
         return list
     }
 
-
     fun getTrackCount(context: Context, folderUri: Uri): Int {
         ensureLibraryLoaded(context)
         val key = folderUri.toString()
-        return tracks.count { it.folderUri == key }
+        return tracks.count { t: LibraryTrack -> t.folderUri == key }
     }
 
     // ---------- Folder thumbnail (cover.jpg only) ----------

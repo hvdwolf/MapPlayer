@@ -1,6 +1,7 @@
 package xyz.hvdw.mapplayer.ui.folder
 
 import android.content.Context
+import android.graphics.BitmapFactory
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -57,11 +58,13 @@ class SongAdapter(
             artistAlbum.text = ctx.getString(R.string.song_artist_album, artist, album)
 
 
+            // 1. Thumbnail direct laden als bestand
             if (track.albumArt != null) {
                 albumArt.setImageBitmap(track.albumArt)
             } else {
                 albumArt.setImageResource(R.drawable.ic_music_note)
             }
+
         }
     }
 }

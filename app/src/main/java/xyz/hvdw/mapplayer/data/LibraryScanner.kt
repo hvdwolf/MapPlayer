@@ -2,6 +2,8 @@ package xyz.hvdw.mapplayer.data
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import java.security.MessageDigest
 import android.net.Uri
 import java.io.FileOutputStream
 import android.media.MediaMetadataRetriever
@@ -9,6 +11,8 @@ import android.os.Environment
 import android.util.Log
 import com.google.gson.Gson
 import java.io.File
+import xyz.hvdw.mapplayer.data.LibraryTrack
+
 
 object LibraryScanner {
 
@@ -31,13 +35,6 @@ object LibraryScanner {
         val coverArtPath: String?
     )
 
-    data class LibraryTrack(
-        val uri: String,
-        val folderUri: String,
-        val title: String,
-        val artist: String?,
-        val album: String?
-    )
 
     fun scanLibrary(
         context: Context,
@@ -172,15 +169,25 @@ object LibraryScanner {
                 listener?.onProgress(currentFileRef[0], totalFiles)
 
                 val trackUri = f.toURI().toString()
-                val (title, artist, album) = extractMetadata(f)
+                val (title, artist, album, embeddedBmp, duration) = extractMetadataWithArt(f)
+
+                val thumbnailPath = if (embeddedBmp != null) {
+                    val key = sha1(f.absolutePath)
+                    saveThumbnail(context, embeddedBmp, key)
+                } else null
 
                 tracks += LibraryTrack(
                     uri = trackUri,
                     folderUri = folderUri,
                     title = title,
                     artist = artist,
-                    album = album
+                    album = album,
+                    duration = duration,
+                    thumbnailPath = thumbnailPath,
+                    metadataLoaded = true
                 )
+
+
             }
         }
     }
@@ -228,6 +235,35 @@ object LibraryScanner {
         return Triple(finalTitle, finalArtist, finalAlbum)
     }
 
+    // ** Nieuw ** //
+    data class MetaResult(
+        val title: String?,
+        val artist: String?,
+        val album: String?,
+        val art: Bitmap?,
+        val duration: Long
+    )
+
+    fun extractMetadataWithArt(file: File): MetaResult {
+        val mmr = MediaMetadataRetriever()
+        mmr.setDataSource(file.absolutePath)
+
+        val art = mmr.embeddedPicture?.let { bytes ->
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        }
+
+        val title = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
+        val artist = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
+        val album = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)
+        val durationStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+        val duration = durationStr?.toLongOrNull() ?: 0L
+
+        mmr.release()
+
+        return MetaResult(title, artist, album, art, duration)
+    }
+
+
     fun loadLibrary(context: Context): LibraryDb? {
         return try {
             val file = File(context.filesDir, LIBRARY_FILE)
@@ -239,4 +275,22 @@ object LibraryScanner {
             null
         }
     }
+
+    private fun saveThumbnail(context: Context, bmp: Bitmap, key: String): String {
+        val dir = File(context.filesDir, "thumbnails")
+        if (!dir.exists()) dir.mkdirs()
+
+        val file = File(dir, "$key.jpg")
+        FileOutputStream(file).use { out ->
+            bmp.compress(Bitmap.CompressFormat.JPEG, 80, out)
+        }
+        return file.absolutePath
+    }
+
+    private fun sha1(text: String): String {
+        val md = MessageDigest.getInstance("SHA-1")
+        val bytes = md.digest(text.toByteArray())
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
+
 }
