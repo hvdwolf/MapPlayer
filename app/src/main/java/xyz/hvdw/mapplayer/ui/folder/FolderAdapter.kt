@@ -60,7 +60,7 @@ class FolderAdapter(
                 image.setImageBitmap(thumb)
             } else {
                 //image.setImageResource(R.drawable.ic_folder_music)
-                val bitmap = BitmapFactory.decodeResource(context.resources, R.raw.ic_launcher_blue)
+                val bitmap = BitmapFactory.decodeResource(context.resources, R.raw.ic_launcher)
                 image.setImageBitmap(bitmap)
             }
 

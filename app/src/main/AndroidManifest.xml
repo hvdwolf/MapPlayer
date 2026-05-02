@@ -15,8 +15,8 @@
         android:resizeableActivity="true"
         android:supportsRtl="true"
         android:label="MapPlayer"
-        android:icon="@mipmap/ic_launcher_blue"
-        android:roundIcon="@mipmap/ic_launcher_blue"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
         android:theme="@style/Theme.MapPlayer" >
 
         <activity android:name=".ui.folder.FolderBrowserActivity" android:exported="false" >
