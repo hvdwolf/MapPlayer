@@ -100,7 +100,12 @@ class PlayerActivity : AppCompatActivity() {
         btnPlayPause = findViewById(R.id.btnPlayPause)
         btnNext = findViewById(R.id.btnNext)
 
-        btnExit.setOnClickListener { finish() }
+        btnExit.setOnClickListener {
+            val intent = Intent(this, MusicService::class.java)
+            intent.action = "ACTION_STOP"
+            startService(intent)
+            finish()
+        }
         btnPrev.setOnClickListener { service?.skipPrevious() }
         btnNext.setOnClickListener { service?.skipNext() }
         btnPlayPause.setOnClickListener {

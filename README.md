@@ -1,6 +1,6 @@
 # MapPlayer
 
-A simple folder-based music player for Android based on the new Google ExoPlayer (not "old" MediaPlayer).
+A folder-based only music player for Android based on the new Google [ExoPlayer](https://developer.android.com/media/media3/exoplayer) (not "old" MediaPlayer).
 
 ### Features
 * Plays all audio files in a folder, sorted by filename (natural sorting)
@@ -22,6 +22,6 @@ A simple folder-based music player for Android based on the new Google ExoPlayer
 * No sorting options
 
 ### Disclaimer
-I created this app entirely for myself and my wife. We have our entire collection in folders.  
+I created this app entirely for myself and my wife. We have our entire collection in folders. We select a folder and use "Play" or "Play in random order". That's all.  
 If you find it useful, then use it and be happy. I will be too.  
-I'm not going to implement any feature requests, unless I personally want/need them.
+I'm not going to implement any feature requests, unless I personally want/need them too.
