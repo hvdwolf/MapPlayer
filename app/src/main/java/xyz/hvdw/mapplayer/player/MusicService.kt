@@ -155,18 +155,23 @@ class MusicService : Service() {
         val list = if (shuffle) shuffledQueue else queue
         if (list.isEmpty()) return
 
-        val track = list[currentIndex]
+        // Bouw de volledige playlist op basis van de huidige queue
+        val mediaItems = list.map { track ->
+            MediaItem.fromUri(track.uri)
+        }
 
-        player.clearMediaItems()
-        player.setMediaItem(MediaItem.fromUri(track.uri))
+        // Zet de hele lijst in de player en start op currentIndex
+        player.setMediaItems(mediaItems, currentIndex, /* startPositionMs = */ 0L)
         player.prepare()
         player.playWhenReady = true
 
-        // Show placeholder or existing art immediately
+        val track = list[currentIndex]
+
+        // Metadata direct updaten
         updateMetadata(track)
         startForegroundWithNotification()
 
-        // Load embedded album art in background
+        // Embedded album art lazy laden
         Thread {
             if (track.albumArt == null) {
                 val bmp = xyz.hvdw.mapplayer.data.MusicRepository
@@ -174,8 +179,6 @@ class MusicService : Service() {
 
                 if (bmp != null) {
                     track.albumArt = bmp
-
-                    // Update metadata + notification on main thread
                     val mainHandler = android.os.Handler(mainLooper)
                     mainHandler.post {
                         updateMetadata(track)
@@ -187,6 +190,7 @@ class MusicService : Service() {
 
         playbackListener?.onTrackChanged()
     }
+
 
 
     fun skipNext() {
