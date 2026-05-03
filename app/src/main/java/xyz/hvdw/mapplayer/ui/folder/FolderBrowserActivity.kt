@@ -37,13 +37,16 @@ class FolderBrowserActivity : AppCompatActivity(),
 
     private lateinit var recyclerView: RecyclerView
     private var currentFolderUri: Uri? = null
+    private var initialized = false
 
     private lateinit var txtScanning: TextView
+    private lateinit var txtStatusSubtitle: TextView
+    private lateinit var txtProgress: TextView
     private lateinit var progressScanning: ProgressBar
 
     private lateinit var gestureDetector: GestureDetector
 
-    // ⭐ ADDED — broadcast receiver to refresh UI when library updates
+    // Broadcast receiver to refresh UI when library updates
     private val libraryUpdatedReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             Log.d("MapPlayer", "Library updated → refreshing folder browser")
@@ -67,56 +70,47 @@ class FolderBrowserActivity : AppCompatActivity(),
         }
 
         txtScanning = findViewById(R.id.txtScanning)
+        txtStatusSubtitle = findViewById(R.id.txtStatusSubtitle)
         progressScanning = findViewById(R.id.progressScanning)
+        txtProgress = findViewById(R.id.txtProgress)
+        txtScanning.visibility = View.GONE
+        txtStatusSubtitle.visibility = View.GONE
+        txtProgress.visibility = View.GONE
+        progressScanning.visibility = View.GONE
 
         recyclerView = findViewById(R.id.recyclerView)
         recyclerView.setSaveEnabled(false)
         recyclerView.layoutManager = LinearLayoutManager(this)
-
-        // If no folder was passed, default to the Music directory
-        currentFolderUri = intent.getStringExtra(EXTRA_FOLDER_URI)?.let { Uri.parse(it) }
-            ?: run {
-                val musicDir = android.os.Environment.getExternalStoragePublicDirectory(
-                    android.os.Environment.DIRECTORY_MUSIC
-                )
-                musicDir.toURI().toString().let { Uri.parse(it) }
-            }
-
-        setupGestureDetector()
-        findViewById<View>(R.id.rootFolderBrowser).setOnTouchListener { _, event ->
-            event?.let { gestureDetector.onTouchEvent(it) }
-            false
-        }
-
-        // ⭐ ADDED — listen for library updates
-        LocalBroadcastManager.getInstance(this).registerReceiver(
-            libraryUpdatedReceiver,
-            IntentFilter("ACTION_LIBRARY_UPDATED")
-        )
 
         if (!PermissionManager.hasAllPermissions(this)) {
             PermissionManager.requestPermissions(this)
             return
         }
 
-        MusicRepository.ensureLibraryLoaded(this)
 
-        if (!MusicRepository.isReady()) {
-            txtScanning.visibility = View.VISIBLE
-            progressScanning.visibility = View.VISIBLE
-            recyclerView.adapter = null
+        // Listen for library updates
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+            libraryUpdatedReceiver,
+            IntentFilter("ACTION_LIBRARY_UPDATED")
+        )
 
-            LibraryScanner.scanLibrary(this) {
-                runOnUiThread {
-                    txtScanning.visibility = View.GONE
-                    progressScanning.visibility = View.GONE
-                    loadContent(null)
-                }
-            }
-        } else {
-            loadContent(currentFolderUri)
-        }
     }
+
+    override fun onResume() {
+        super.onResume()
+
+        // No double initialization
+        if (initialized) return
+
+        if (!PermissionManager.hasAllPermissions(this)) {
+            PermissionManager.requestPermissions(this)
+            return
+        }
+
+        initializeBrowser()   // <-- pas nu mag je scannen / laden
+    }
+
+
 
     private fun setupGestureDetector() {
         gestureDetector = GestureDetector(
@@ -159,16 +153,13 @@ class FolderBrowserActivity : AppCompatActivity(),
                 }
             }
 
-            /* val adapter = SongAdapter(tracks, this)
-            adapter.setShuffle(false)
-            recyclerView.adapter = adapter */
             return
         }
 
         recyclerView.adapter = FolderAdapter(emptyList(), this)
     }
 
-    // ⭐ ADDED — reload current folder after library update
+    // Reload current folder after library update
     private fun reloadContent() {
         loadContent(currentFolderUri)
     }
@@ -211,7 +202,65 @@ class FolderBrowserActivity : AppCompatActivity(),
 
     override fun onDestroy() {
         super.onDestroy()
-        // ⭐ ADDED — clean up receiver
+        // Clean up receiver
         LocalBroadcastManager.getInstance(this).unregisterReceiver(libraryUpdatedReceiver)
     }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (PermissionManager.hasAllPermissions(this)) {
+            initializeBrowser()
+        }
+    }
+
+
+    private fun initializeBrowser() {
+         if (initialized) return
+         initialized = true
+
+        // If no folder was passed, default to the Music directory
+        currentFolderUri = intent.getStringExtra(EXTRA_FOLDER_URI)?.let { Uri.parse(it) }
+            ?: run {
+                val musicDir = android.os.Environment.getExternalStoragePublicDirectory(
+                    android.os.Environment.DIRECTORY_MUSIC
+                )
+                musicDir.toURI().toString().let { Uri.parse(it) }
+            }
+
+        setupGestureDetector()
+        findViewById<View>(R.id.rootFolderBrowser).setOnTouchListener { _, event ->
+            event?.let { gestureDetector.onTouchEvent(it) }
+            false
+        }
+
+        MusicRepository.ensureLibraryLoaded(this)
+
+        if (!MusicRepository.isReady()) {
+            txtScanning.visibility = View.VISIBLE
+            txtStatusSubtitle.visibility = View.VISIBLE
+            txtProgress.visibility = View.VISIBLE
+            progressScanning.visibility = View.VISIBLE
+            recyclerView.adapter = null
+
+            LibraryScanner.scanLibrary(this) {
+                runOnUiThread {
+                    txtScanning.visibility = View.GONE
+                    txtStatusSubtitle.visibility = View.GONE
+                    txtProgress.visibility = View.VISIBLE
+                    progressScanning.visibility = View.GONE
+                    loadContent(currentFolderUri)
+                }
+            }
+        } else {
+            txtProgress.visibility = View.GONE
+            loadContent(currentFolderUri)
+        }
+    }
+
+
 }

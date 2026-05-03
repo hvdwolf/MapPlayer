@@ -2,7 +2,7 @@
 
     <!-- MAIN APP THEME (required by manifest) -->
     <style name="Theme.MapPlayer" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Your brand colors -->
+        <!-- My brand colors -->
         <item name="colorPrimary">@color/my_deep_blue</item>
         <item name="colorOnPrimary">@android:color/white</item>
 
