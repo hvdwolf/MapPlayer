@@ -16,42 +16,6 @@
         app:title="MapPlayer"
         app:menu="@menu/menu_main" />
 
-    <TextView
-        android:id="@+id/txtScanning"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/settings_scanning"
-        android:textSize="16sp"
-        android:visibility="gone"
-        android:layout_margin="8dp"
-        android:textColor="@android:color/darker_gray" />
-
-    <TextView
-        android:id="@+id/txtStatusSubtitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/settings_scanning_subtitle"
-        android:paddingBottom="16dp"
-        android:visibility="gone"
-        android:layout_margin="8dp"
-        android:textColor="@android:color/darker_gray" />
-
-    <TextView
-        android:id="@+id/txtProgress"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textAppearance="?attr/textAppearanceBodyMedium"
-        android:paddingBottom="8dp"
-        android:visibility="gone" />
-
-    <ProgressBar
-        android:id="@+id/progressScanning"
-        style="?android:attr/progressBarStyleLarge"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        android:layout_margin="8dp" />
-
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="match_parent"

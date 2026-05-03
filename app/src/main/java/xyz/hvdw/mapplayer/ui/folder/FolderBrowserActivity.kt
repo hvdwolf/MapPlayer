@@ -39,11 +39,6 @@ class FolderBrowserActivity : AppCompatActivity(),
     private var currentFolderUri: Uri? = null
     private var initialized = false
 
-    private lateinit var txtScanning: TextView
-    private lateinit var txtStatusSubtitle: TextView
-    private lateinit var txtProgress: TextView
-    private lateinit var progressScanning: ProgressBar
-
     private lateinit var gestureDetector: GestureDetector
 
     // Broadcast receiver to refresh UI when library updates
@@ -69,14 +64,6 @@ class FolderBrowserActivity : AppCompatActivity(),
             }
         }
 
-        txtScanning = findViewById(R.id.txtScanning)
-        txtStatusSubtitle = findViewById(R.id.txtStatusSubtitle)
-        progressScanning = findViewById(R.id.progressScanning)
-        txtProgress = findViewById(R.id.txtProgress)
-        txtScanning.visibility = View.GONE
-        txtStatusSubtitle.visibility = View.GONE
-        txtProgress.visibility = View.GONE
-        progressScanning.visibility = View.GONE
 
         recyclerView = findViewById(R.id.recyclerView)
         recyclerView.setSaveEnabled(false)
@@ -125,14 +112,9 @@ class FolderBrowserActivity : AppCompatActivity(),
         Log.d("MapPlayer", "Loading folder: $folderUri")
 
         if (!MusicRepository.isReady()) {
-            txtScanning.visibility = View.VISIBLE
-            progressScanning.visibility = View.VISIBLE
             recyclerView.adapter = null
             return
         }
-
-        txtScanning.visibility = View.GONE
-        progressScanning.visibility = View.GONE
 
         val subfolders = MusicRepository.listSubfolders(this, folderUri)
 
@@ -241,23 +223,14 @@ class FolderBrowserActivity : AppCompatActivity(),
         MusicRepository.ensureLibraryLoaded(this)
 
         if (!MusicRepository.isReady()) {
-            txtScanning.visibility = View.VISIBLE
-            txtStatusSubtitle.visibility = View.VISIBLE
-            txtProgress.visibility = View.VISIBLE
-            progressScanning.visibility = View.VISIBLE
-            recyclerView.adapter = null
-
-            LibraryScanner.scanLibrary(this) {
-                runOnUiThread {
-                    txtScanning.visibility = View.GONE
-                    txtStatusSubtitle.visibility = View.GONE
-                    txtProgress.visibility = View.VISIBLE
-                    progressScanning.visibility = View.GONE
-                    loadContent(currentFolderUri)
-                }
-            }
+            startActivity(Intent(this, SettingsActivity::class.java))
+            true
+            // Listen for library updates
+            LocalBroadcastManager.getInstance(this).registerReceiver(
+                libraryUpdatedReceiver,
+                IntentFilter("ACTION_LIBRARY_UPDATED")
+            )
         } else {
-            txtProgress.visibility = View.GONE
             loadContent(currentFolderUri)
         }
     }

@@ -93,12 +93,26 @@ class MusicService : Service() {
 
         player.addListener(object : Player.Listener {
 
+            // Called when ExoPlayer switches to the next MediaItem (auto or manual)
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                val list = if (shuffle) shuffledQueue else queue
+                val exoIndex = player.currentMediaItemIndex
+
+                if (exoIndex in list.indices) {
+                    currentIndex = exoIndex
+                    val track = list[currentIndex]
+
+                    updateMetadata(track)
+                    startForegroundWithNotification()
+                    playbackListener?.onTrackChanged()
+                }
+            }
+
             override fun onTimelineChanged(
                 timeline: com.google.android.exoplayer2.Timeline,
                 reason: Int
             ) {
                 updatePlaybackState()
-                getCurrentTrack()?.let { updateMetadata(it) }
             }
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -106,17 +120,14 @@ class MusicService : Service() {
             }
 
             override fun onPositionDiscontinuity(reason: Int) {
-        updatePlaybackState()
+                updatePlaybackState()
             }
 
             override fun onPlaybackStateChanged(state: Int) {
                 updatePlaybackState()
-
-                if (state == Player.STATE_ENDED) {
-                    skipNext()
-                }
             }
         })
+
 
     }
 
