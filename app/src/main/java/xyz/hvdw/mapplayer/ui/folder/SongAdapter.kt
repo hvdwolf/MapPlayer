@@ -48,6 +48,7 @@ class SongAdapter(
         private val albumArt: ImageView = itemView.findViewById(R.id.songAlbumArt)
         private val title: TextView = itemView.findViewById(R.id.songTitle)
         private val artistAlbum: TextView = itemView.findViewById(R.id.songArtistAlbum)
+        private val duration: TextView = itemView.findViewById(R.id.songDuration)
 
         fun bind(track: Track, context: Context) {
             title.text = track.title
@@ -56,6 +57,7 @@ class SongAdapter(
             val artist = track.artist ?: ctx.getString(R.string.unknown_artist)
             val album = track.album ?: ctx.getString(R.string.unknown_album)
             artistAlbum.text = ctx.getString(R.string.song_artist_album, artist, album)
+            duration.text = formatDuration(track.duration)
 
 
             // 1. Thumbnail direct laden als bestand
@@ -64,7 +66,14 @@ class SongAdapter(
             } else {
                 albumArt.setImageResource(R.drawable.ic_music_note)
             }
-
         }
+
+        private fun formatDuration(ms: Long): String {
+            val totalSeconds = ms / 1000
+            val minutes = totalSeconds / 60
+            val seconds = totalSeconds % 60
+            return String.format("%d:%02d", minutes, seconds)
+        }
+
     }
 }

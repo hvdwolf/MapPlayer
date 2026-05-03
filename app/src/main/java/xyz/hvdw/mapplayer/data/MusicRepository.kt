@@ -82,6 +82,7 @@ object MusicRepository {
                     title = t.title ?: "",
                     artist = t.artist,
                     album = t.album,
+                    duration = t.duration,
                     albumArt = bmp
                 )
             }
@@ -137,10 +138,10 @@ object MusicRepository {
         return folder.parentUri?.let { Uri.parse(it) }
     }
 
-    private fun loadEmbeddedAlbumArtThumbnail(context: Context, uri: Uri): Bitmap? {
+    /*private fun loadEmbeddedAlbumArtThumbnail(context: Context, uri: Uri): Bitmap? {
         val full = loadEmbeddedAlbumArt(context, uri) ?: return null
         return Bitmap.createScaledBitmap(full, 256, 256, true)
-    }
+    }*/
 
 
 }

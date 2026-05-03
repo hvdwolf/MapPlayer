@@ -12,7 +12,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="8dp">
+        android:padding="6dp">
 
         <!-- Album art (square) -->
         <ImageView
@@ -52,6 +52,19 @@
             app:layout_constraintStart_toStartOf="@id/songTitle"
             app:layout_constraintTop_toBottomOf="@id/songTitle"
             app:layout_constraintEnd_toEndOf="parent" />
+
+       <!-- Duration -->
+       <TextView
+           android:id="@+id/songDuration"
+           android:layout_width="0dp"
+           android:layout_height="wrap_content"
+           android:textSize="12sp"
+           android:textColor="?android:attr/textColorSecondary"
+           android:maxLines="1"
+           android:ellipsize="end"
+           app:layout_constraintStart_toStartOf="@id/songArtistAlbum"
+           app:layout_constraintTop_toBottomOf="@id/songArtistAlbum"
+           app:layout_constraintEnd_toEndOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
