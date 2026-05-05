@@ -12,6 +12,14 @@ import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 import xyz.hvdw.mapplayer.data.LibraryTrack
 
+data class SearchEntry(
+    val uri: String,
+    val title: String,
+    val artist: String?,
+    val album: String?,
+    val folderUri: String?
+)
+
 object MusicRepository {
 
     private val libraryLoaded = AtomicBoolean(false)
@@ -151,6 +159,22 @@ object MusicRepository {
                 }
             )
         }
+    }
+
+    fun getAllTracksForSearch(): List<SearchEntry> {
+        return tracks.map { t ->
+            SearchEntry(
+                uri = t.uri,
+                title = t.title ?: "",
+                artist = t.artist,
+                album = t.album,
+                folderUri = t.folderUri
+            )
+        }
+    }
+
+    fun getTrackByUri(uri: String): Track? {
+        return getAllTracks().firstOrNull { it.uri.toString() == uri }
     }
 
     fun getFolderUriOfTrack(uri: Uri): Uri? {

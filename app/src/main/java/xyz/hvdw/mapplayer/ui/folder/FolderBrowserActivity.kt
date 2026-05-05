@@ -30,6 +30,7 @@ import xyz.hvdw.mapplayer.model.Track
 import xyz.hvdw.mapplayer.permissions.PermissionManager
 import xyz.hvdw.mapplayer.ui.player.PlayerActivity
 import xyz.hvdw.mapplayer.ui.settings.SettingsActivity
+import xyz.hvdw.mapplayer.data.SearchEntry
 
 class FolderBrowserActivity : AppCompatActivity(),
     FolderAdapter.FolderClickListener,
@@ -319,29 +320,29 @@ class FolderBrowserActivity : AppCompatActivity(),
     private fun performSearch(query: String) {
         val q = query.lowercase()
 
-        val results = MusicRepository.getAllTracks().filter { track ->
-            track.title.lowercase().contains(q) ||
-            (track.artist ?: "").lowercase().contains(q) ||
-            (track.album ?: "").lowercase().contains(q)
+        val results = MusicRepository.getAllTracksForSearch().filter { t ->
+            t.title.lowercase().contains(q) ||
+            (t.artist ?: "").lowercase().contains(q) ||
+            (t.album ?: "").lowercase().contains(q)
         }
 
         inSearchMode = true
 
-        recyclerView.adapter = SearchResultsAdapter(results) { clickedTrack ->
-            openPlayerFromSearch(clickedTrack)
+        recyclerView.adapter = SearchResultsAdapter(results) { entry ->
+            openPlayerFromSearchEntry(entry)
         }
     }
 
     class SearchResultsAdapter(
-        private val tracks: List<Track>,
-        private val onClick: (Track) -> Unit
+        private val tracks: List<SearchEntry>,
+        private val onClick: (SearchEntry) -> Unit
     ) : RecyclerView.Adapter<SearchResultsAdapter.ViewHolder>() {
 
         inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val title: TextView = view.findViewById(R.id.txtTitle)
             val artist: TextView = view.findViewById(R.id.txtArtist)
 
-            init {
+             init {
                 view.setOnClickListener {
                     onClick(tracks[adapterPosition])
                 }
@@ -357,7 +358,7 @@ class FolderBrowserActivity : AppCompatActivity(),
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val t = tracks[position]
             holder.title.text = t.title
-            holder.artist.text = t.artist
+            holder.artist.text = t.artist ?: ""
         }
 
         override fun getItemCount() = tracks.size
@@ -392,6 +393,13 @@ class FolderBrowserActivity : AppCompatActivity(),
         intent.putExtra(PlayerActivity.EXTRA_START_INDEX, index)
         intent.putExtra(PlayerActivity.EXTRA_SHUFFLE, false)
         startActivity(intent)
+    }
+
+    private fun openPlayerFromSearchEntry(entry: SearchEntry) {
+        val fullTrack = MusicRepository.getTrackByUri(entry.uri)
+            ?: return
+
+        openPlayerFromSearch(fullTrack)
     }
 
 }
