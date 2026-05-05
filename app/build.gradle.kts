@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("kotlin-parcelize")
     id("io.gitlab.arturbosch.detekt") version "1.23.8"
 }
 
@@ -13,8 +14,8 @@ android {
         applicationId = "xyz.hvdw.mapplayer"
         minSdk = 29  // Android 10
         targetSdk = 33
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.0.1"
 
         // Only include the ABIs you want in the final APK
         ndk {

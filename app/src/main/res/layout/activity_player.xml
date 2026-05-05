@@ -7,15 +7,30 @@
     android:layout_height="match_parent"
     android:padding="16dp">
 
+
     <!-- Exit button -->
     <ImageButton
         android:id="@+id/btnExit"
         android:layout_width="32dp"
         android:layout_height="32dp"
         android:background="@android:color/transparent"
-        android:src="@drawable/ic_exit"
+        android:src="@drawable/ic_close"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/txtShuffle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/shuffle_mode"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/controlsContainer"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="8dp"/>
+
 
     <!-- Controls container (BOTTOM ANCHOR) -->
     <LinearLayout
@@ -24,15 +39,14 @@
         android:layout_height="72dp"
         android:orientation="horizontal"
         android:gravity="center"
-        android:layout_marginTop="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
         <ImageButton
             android:id="@+id/btnClose"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
             android:background="@android:color/transparent"
             android:src="@drawable/ic_close"
             android:tint="@color/player_icon_tint"
@@ -40,27 +54,27 @@
 
         <ImageButton
             android:id="@+id/btnPrev"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
             android:background="@android:color/transparent"
-            android:src="@drawable/ic_previous_chevron"
+            android:src="@drawable/ic_skip_previous"
             android:tint="@color/player_icon_tint" />
 
         <ImageButton
             android:id="@+id/btnPlayPause"
-            android:layout_width="72dp"
-            android:layout_height="72dp"
+            android:layout_width="92dp"
+            android:layout_height="92dp"
             android:background="@android:color/transparent"
             android:tint="@color/player_icon_tint"
             android:src="@drawable/ic_play" />
 
         <ImageButton
             android:id="@+id/btnNext"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
             android:background="@android:color/transparent"
             android:tint="@color/player_icon_tint"
-            android:src="@drawable/ic_next_chevron" />
+            android:src="@drawable/ic_skip_next" />
     </LinearLayout>
 
     <!-- Album art: anchored between exit button and controls -->

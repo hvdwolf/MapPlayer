@@ -210,6 +210,13 @@ class MusicService : Service() {
 
         currentIndex = (currentIndex + 1) % list.size
         playCurrent()
+
+        playbackListener?.onTrackChanged()
+    }
+
+    fun setShuffle(enabled: Boolean) {
+        shuffle = enabled
+        player.shuffleModeEnabled = enabled
     }
 
     fun skipPrevious() {

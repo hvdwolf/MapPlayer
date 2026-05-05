@@ -13,8 +13,7 @@
         android:background="?attr/colorPrimary"
         app:theme="@style/Theme.MapPlayer.Toolbar"
         app:popupTheme="@style/MapPlayer.PopupMenu"
-        app:title="MapPlayer"
-        app:menu="@menu/menu_main" />
+        app:title="MapPlayer" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"

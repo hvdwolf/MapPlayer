@@ -138,10 +138,53 @@ object MusicRepository {
         return folder.parentUri?.let { Uri.parse(it) }
     }
 
-    /*private fun loadEmbeddedAlbumArtThumbnail(context: Context, uri: Uri): Bitmap? {
-        val full = loadEmbeddedAlbumArt(context, uri) ?: return null
-        return Bitmap.createScaledBitmap(full, 256, 256, true)
-    }*/
+    fun getAllTracks(): List<Track> {
+        return tracks.map { t ->
+            Track(
+                uri = Uri.parse(t.uri),
+                title = t.title ?: "",
+                artist = t.artist,
+                album = t.album,
+                duration = t.duration,
+                albumArt = t.thumbnailPath?.let { path ->
+                    BitmapFactory.decodeFile(path)
+                }
+            )
+        }
+    }
 
+    fun getFolderUriOfTrack(uri: Uri): Uri? {
+        val key = uri.toString()
+        val t = tracks.firstOrNull { it.uri == key } ?: return null
+        return t.folderUri?.let { Uri.parse(it) }
+    }
+
+    fun getTracksInFolder(folderUri: Uri): List<Track> {
+        val key = folderUri.toString()
+        return tracks
+            .filter { it.folderUri == key }
+            .sortedBy { Uri.parse(it.uri).lastPathSegment?.lowercase() ?: "" }
+            .map { t ->
+                Track(
+                    uri = Uri.parse(t.uri),
+                    title = t.title ?: "",
+                    artist = t.artist,
+                    album = t.album,
+                    duration = t.duration,
+                    albumArt = null
+                )
+            }
+    }
+
+    fun getIndexOfTrackInFolder(folderUri: Uri, trackUri: Uri): Int {
+        val key = folderUri.toString()
+        val trackKey = trackUri.toString()
+
+        val list = tracks
+            .filter { it.folderUri == key }
+            .sortedBy { Uri.parse(it.uri).lastPathSegment?.lowercase() ?: "" }
+
+        return list.indexOfFirst { it.uri == trackKey }
+    }
 
 }

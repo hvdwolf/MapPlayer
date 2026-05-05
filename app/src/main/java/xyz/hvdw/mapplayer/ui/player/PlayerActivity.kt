@@ -10,6 +10,8 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.util.Log
+import android.view.View
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.SeekBar
@@ -30,6 +32,7 @@ class PlayerActivity : AppCompatActivity() {
 
     private var service: MusicService? = null
     private var bound = false
+    private var shuffleMode = false
 
     private lateinit var imgAlbumArt: ImageView
     private lateinit var txtTitle: TextView
@@ -41,6 +44,7 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var btnPrev: ImageButton
     private lateinit var btnPlayPause: ImageButton
     private lateinit var btnNext: ImageButton
+    private lateinit var txtShuffle: TextView
 
     private val handler = Handler(Looper.getMainLooper())
     private val updateRunnable = object : Runnable {
@@ -99,6 +103,7 @@ class PlayerActivity : AppCompatActivity() {
         btnPrev = findViewById(R.id.btnPrev)
         btnPlayPause = findViewById(R.id.btnPlayPause)
         btnNext = findViewById(R.id.btnNext)
+        txtShuffle = findViewById(R.id.txtShuffle)
 
         btnExit.setOnClickListener {
             val intent = Intent(this, MusicService::class.java)
@@ -163,6 +168,7 @@ class PlayerActivity : AppCompatActivity() {
             return
         }
 
+        // Normal or shuffled playback mode
         val folderUriStr = intent.getStringExtra(EXTRA_FOLDER_URI) ?: return
         val shuffle = intent.getBooleanExtra(EXTRA_SHUFFLE, false)
         val startIndex = intent.getIntExtra(EXTRA_START_INDEX, 0)
@@ -217,12 +223,25 @@ class PlayerActivity : AppCompatActivity() {
         }
 
         updatePlayPauseIcon()
+        updateShuffleTxt()
         updateProgress()
     }
 
     private fun updatePlayPauseIcon() {
         val playing = service?.isPlaying() ?: false
         btnPlayPause.setImageResource(if (playing) R.drawable.ic_pause else R.drawable.ic_play)
+    }
+
+    private fun updateShuffleTxt() {
+        val shuffle = intent.getBooleanExtra(EXTRA_SHUFFLE, false)
+        txtShuffle.text = getString(R.string.shuffle_mode)
+        //val txtShuffleText = this.getString(R.string.shuffle_mode)
+        //Log.d("MapPlayer_PlayerActivity", "Entering the updateShuffleText with shuffle value $shuffle and txtShuffleText $txtShuffleText")
+        if (shuffle) {
+            txtShuffle.visibility = View.VISIBLE
+        } else {
+            txtShuffle.visibility = View.GONE
+        }
     }
 
     private fun updateProgress() {

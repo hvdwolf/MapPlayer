@@ -12,6 +12,7 @@
     <string name="unknown_album">Onbekend album</string>
 
     <string name="song_artist_album">%1$s • %2$s</string>
+    <string name="shuffle_mode">Shufflemodus</string>
 
     <string name="menu_settings">Instellingen</string>
     <string name="menu_play">Afspelen</string>
@@ -26,5 +27,8 @@
     <string name="settings_library_not_loaded">Bibliotheek niet geladen</string>
     <string name="settings_library_status">Bibliotheekstatus</string>
     <string name="settings_rescan_library">Muziekbibliotheek opnieuw scannen</string>
+
+    <string name="menu_search">Zoeken</string>
+    <string name="search_hint">Zoek op titel, artiest, of album</string>
 
 </resources>
