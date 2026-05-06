@@ -109,11 +109,24 @@
         android:id="@+id/txtArtist"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Artist / Album"
+        android:text="Artist"
         android:textSize="14sp"
         android:gravity="center_horizontal"
         android:layout_marginBottom="8dp"
         app:layout_constraintTop_toBottomOf="@id/txtTitle"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Album -->
+    <TextView
+        android:id="@+id/txtAlbum"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Album"
+        android:textSize="14sp"
+        android:gravity="center_horizontal"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintTop_toBottomOf="@id/txtArtist"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -122,7 +135,7 @@
         android:id="@+id/timeRow"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/txtArtist"
+        app:layout_constraintTop_toBottomOf="@id/txtAlbum"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/controlsContainer">

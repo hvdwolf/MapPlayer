@@ -37,6 +37,7 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var imgAlbumArt: ImageView
     private lateinit var txtTitle: TextView
     private lateinit var txtArtist: TextView
+    private lateinit var txtAlbum: TextView
     private lateinit var txtCurrentTime: TextView
     private lateinit var txtTotalTime: TextView
     private lateinit var seekBar: SeekBar
@@ -96,6 +97,7 @@ class PlayerActivity : AppCompatActivity() {
         imgAlbumArt = findViewById(R.id.imgAlbumArt)
         txtTitle = findViewById(R.id.txtTitle)
         txtArtist = findViewById(R.id.txtArtist)
+        txtAlbum = findViewById(R.id.txtAlbum)
         txtCurrentTime = findViewById(R.id.txtCurrentTime)
         txtTotalTime = findViewById(R.id.txtTotalTime)
         seekBar = findViewById(R.id.seekBar)
@@ -194,7 +196,8 @@ class PlayerActivity : AppCompatActivity() {
         val track = service?.getCurrentTrack() ?: return
 
         txtTitle.text = track.title
-        txtArtist.text = track.artist ?: track.album ?: ""
+        txtArtist.text = track.artist ?: ""
+        txtAlbum.text = track.album ?: ""
 
         // Reset time labels for new track
         txtCurrentTime.text = "0:00"
