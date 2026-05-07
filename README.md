@@ -30,11 +30,11 @@ If you find it useful, then use it and be happy. I will be too.
 I'm not going to implement any feature requests, unless I personally want/need them too.
 
 ### Some screenshots
-# Screenshots
+From my Samsung phone , but should work on any Android device running Android 10+
 
-Some screenshots             |      
+Some screenshots             |      |
 |:-------------------------:|:-------------------------:|
 | Music folder view  |  folder menu  |
-![](./images/root_folder_view.jpg)  |  ![](./images/folder_menu.jpg)
+|  ![](./images/root_folder_view.jpg)  |  ![](./images/folder_menu.jpg)  |
 |  in folder view  |  library scan  |
-![](./images/in_folder_view.jpg)  |  ![](./images/library_scan.jpg)
+|  ![](./images/in_folder_view.jpg)  |  ![](./images/library_scan.jpg)  |
