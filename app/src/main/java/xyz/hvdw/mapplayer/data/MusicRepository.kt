@@ -26,6 +26,7 @@ object MusicRepository {
 
     private var folders: List<LibraryScanner.LibraryFolder> = emptyList()
     private var tracks: List<LibraryTrack> = emptyList()
+    private val folderCache = mutableMapOf<String, List<Track>>()
 
 
     fun loadLibraryFromJson(context: Context) {
@@ -64,7 +65,6 @@ object MusicRepository {
     }
 
     // ---------- Track listing (instant from memory) ----------
-
     fun listTracksInFolder(
         context: Context,
         folderUri: Uri,
@@ -95,9 +95,17 @@ object MusicRepository {
                 )
             }
 
+        // Cache the final list
+        folderCache[key] = list
+
         callback(list)
         return list
     }
+
+    fun getCachedTracksInFolder(folderUri: Uri): List<Track>? {
+        return folderCache[folderUri.toString()]
+    }
+
 
     fun getTrackCount(context: Context, folderUri: Uri): Int {
         ensureLibraryLoaded(context)

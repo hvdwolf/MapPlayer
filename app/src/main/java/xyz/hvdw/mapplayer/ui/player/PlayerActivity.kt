@@ -177,6 +177,15 @@ class PlayerActivity : AppCompatActivity() {
 
         val folderUri = Uri.parse(folderUriStr)
 
+        // 1. Try cached folder list first (INSTANT)
+        val cached = MusicRepository.getCachedTracksInFolder(folderUri)
+        if (cached != null) {
+            svc.playTracks(cached, startIndex, shuffle)
+            runOnUiThread { updateUi() }
+            return
+        }
+
+        // 2. Fallback: scan folder ONCE if cache is empty
         MusicRepository.listTracksInFolder(
             this,
             folderUri
@@ -186,6 +195,7 @@ class PlayerActivity : AppCompatActivity() {
                 runOnUiThread { updateUi() }
             }
         }
+
     }
 
 

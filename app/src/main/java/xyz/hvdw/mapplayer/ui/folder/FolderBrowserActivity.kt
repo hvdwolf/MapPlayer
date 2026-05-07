@@ -396,10 +396,39 @@ class FolderBrowserActivity : AppCompatActivity(),
     }
 
     private fun openPlayerFromSearchEntry(entry: SearchEntry) {
-        val fullTrack = MusicRepository.getTrackByUri(entry.uri)
+        val folderUri = entry.folderUri?.let { Uri.parse(it) }
+            ?: currentFolderUri
             ?: return
 
-        openPlayerFromSearch(fullTrack)
+        // Try cached folder list first
+        val cached = MusicRepository.getCachedTracksInFolder(folderUri)
+        if (cached != null) {
+            val index = cached.indexOfFirst { it.uri.toString() == entry.uri }
+            if (index != -1) {
+                openPlayerWithCachedList(folderUri, cached, index)
+                return
+            }
+        }
+
+        // Fallback: build and cache the folder list once via listTracksInFolder
+        MusicRepository.listTracksInFolder(this, folderUri) { tracks ->
+            if (tracks.isEmpty()) return@listTracksInFolder
+
+            val index = tracks.indexOfFirst { it.uri.toString() == entry.uri }
+            if (index == -1) return@listTracksInFolder
+
+            runOnUiThread {
+                openPlayerWithCachedList(folderUri, tracks, index)
+            }
+        }
+    }
+
+    private fun openPlayerWithCachedList(folderUri: Uri, tracks: List<Track>, index: Int) {
+        val intent = Intent(this, PlayerActivity::class.java)
+        intent.putExtra(PlayerActivity.EXTRA_FOLDER_URI, folderUri.toString())
+        intent.putExtra(PlayerActivity.EXTRA_START_INDEX, index)
+        intent.putExtra(PlayerActivity.EXTRA_SHUFFLE, false)
+        startActivity(intent)
     }
 
 }
