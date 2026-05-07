@@ -28,3 +28,13 @@ A folder-based only music player for Android based on the new Google [ExoPlayer]
 I created this app entirely for myself and my wife. We have our entire collection in folders. We select a folder and use "Play" or "Play in random order". That's all. Repeat: That's all.  
 If you find it useful, then use it and be happy. I will be too.  
 I'm not going to implement any feature requests, unless I personally want/need them too.
+
+### Some screenshots
+# Screenshots
+
+Some screenshots             |      
+|:-------------------------:|:-------------------------:|
+| Music folder view  |  folder menu  |
+![](./images/root_folder_view.jpg)  |  ![](./images/folder_menu.jpg)
+|  in folder view  |  library scan  |
+![](./images/in_folder_view.jpg)  |  ![](./images/library_scan.jpg)
