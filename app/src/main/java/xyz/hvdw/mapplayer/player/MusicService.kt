@@ -59,6 +59,16 @@ class MusicService : Service() {
 
     var playbackListener: PlaybackListener? = null
 
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val progressUpdater = object : Runnable {
+        override fun run() {
+            updatePlaybackState()
+            updateNotification()
+            handler.postDelayed(this, 1000)
+        }
+    }
+
+
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
@@ -117,6 +127,11 @@ class MusicService : Service() {
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 updatePlaybackState()
+                if (isPlaying) {
+                    handler.post(progressUpdater)
+                } else {
+                    handler.removeCallbacks(progressUpdater)
+                }
             }
 
             override fun onPositionDiscontinuity(reason: Int) {
@@ -124,8 +139,18 @@ class MusicService : Service() {
             }
 
             override fun onPlaybackStateChanged(state: Int) {
-                updatePlaybackState()
+
+                if (state == Player.STATE_READY) {
+                    getCurrentTrack()?.let { track ->
+                        updateMetadata(track)
+                        updatePlaybackState()
+                        updateNotification()
+                    }
+                } else {
+                    updatePlaybackState()
+                }
             }
+
         })
 
 
@@ -193,6 +218,7 @@ class MusicService : Service() {
                     val mainHandler = android.os.Handler(mainLooper)
                     mainHandler.post {
                         updateMetadata(track)
+                        updatePlaybackState()
                         updateNotification()
                     }
                 }
@@ -255,7 +281,8 @@ class MusicService : Service() {
     private fun updateMetadata(track: Track) {
         val art = track.albumArt ?: vectorToBitmap(R.drawable.ic_music_note_placeholder)
 
-        val durationMs = player.duration.takeIf { it > 0 } ?: 0L
+        val rawDuration = player.duration
+        val durationMs = if (rawDuration > 0) rawDuration else 0L
 
         val metadata = MediaMetadataCompat.Builder()
             .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track.title)
@@ -273,6 +300,7 @@ class MusicService : Service() {
         val isPlaying = player.isPlaying
         val position = player.currentPosition
         val buffered = player.bufferedPosition
+        val speed = if (isPlaying) 1.0f else 0.0f
 
         val playbackState = PlaybackStateCompat.Builder()
             .setActions(
@@ -286,7 +314,7 @@ class MusicService : Service() {
             .setState(
                 if (isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED,
                 position,
-                1.0f
+                speed
             )
             .setBufferedPosition(buffered)
             .build()
@@ -359,6 +387,16 @@ class MusicService : Service() {
         )
         builder.addAction(R.drawable.ic_skip_next, "Next", nextIntent)
 
+        val raw = player.duration
+        val duration = if (raw > 0) raw else 0L
+        val position = player.currentPosition
+
+        builder.setProgress(
+            duration.toInt(),
+            position.toInt(),
+            false
+        )
+
         return builder.build()
     }
 
@@ -414,6 +452,7 @@ class MusicService : Service() {
     fun refreshMetadata() {
         val track = getCurrentTrack() ?: return
         updateMetadata(track)
+        updatePlaybackState()
         updateNotification()
     }
 

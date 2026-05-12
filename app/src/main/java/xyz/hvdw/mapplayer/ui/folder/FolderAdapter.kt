@@ -42,7 +42,8 @@ class FolderAdapter(
         private val image: ImageView = itemView.findViewById(R.id.folderImage)
         private val name: TextView = itemView.findViewById(R.id.folderName)
         private val subtitle: TextView = itemView.findViewById(R.id.folderSubtitle)
-        private val menu: ImageView = itemView.findViewById(R.id.folderMenu)
+        private val menufront: ImageView = itemView.findViewById(R.id.folderMenuFront)
+        private val menuback: ImageView = itemView.findViewById(R.id.folderMenuBack)
 
         fun bind(folder: FolderItem, listener: FolderClickListener) {
             val context = itemView.context
@@ -75,9 +76,9 @@ class FolderAdapter(
                 true
             }
 
-            // Three-dot menu
-            menu.setOnClickListener {
-                val popup = PopupMenu(context, menu)
+            // Three-dot menu front
+            menufront.setOnClickListener {
+                val popup = PopupMenu(context, menufront)
                 popup.menuInflater.inflate(R.menu.menu_folder, popup.menu)
                 popup.setOnMenuItemClickListener { item ->
                     when (item.itemId) {
@@ -94,6 +95,28 @@ class FolderAdapter(
                 }
                 popup.show()
             }
+
+            // Three-dot menu back
+            menuback.setOnClickListener {
+                val popup = PopupMenu(context, menuback)
+                popup.menuInflater.inflate(R.menu.menu_folder, popup.menu)
+                popup.setOnMenuItemClickListener { item ->
+                    when (item.itemId) {
+                        R.id.action_play -> {
+                            listener.onFolderPlay(folder, false)
+                            true
+                        }
+                        R.id.action_play_random -> {
+                            listener.onFolderPlay(folder, true)
+                            true
+                        }
+                        else -> false
+                    }
+                }
+                popup.show()
+            }
+
+
         }
     }
 }

@@ -8,6 +8,15 @@
     android:padding="8dp"
     android:foreground="?attr/selectableItemBackground">
 
+    <!-- Three-dot menu -->
+    <ImageView
+        android:id="@+id/folderMenuFront"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:padding="4dp"
+        android:src="@drawable/ic_more_vert"
+        android:contentDescription="@string/menu" />
+
     <!-- Folder icon / cover art -->
     <ImageView
         android:id="@+id/folderImage"
@@ -45,9 +54,9 @@
             android:text="@string/folder_subtitle_default" />
     </LinearLayout>
 
-    <!-- Three-dot menu -->
+    <!-- Three-dot menu repeated-->
     <ImageView
-        android:id="@+id/folderMenu"
+        android:id="@+id/folderMenuBack"
         android:layout_width="32dp"
         android:layout_height="32dp"
         android:padding="4dp"
