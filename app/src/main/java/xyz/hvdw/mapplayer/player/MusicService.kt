@@ -128,9 +128,11 @@ class MusicService : Service() {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 updatePlaybackState()
                 if (isPlaying) {
+                    updatePlaybackState()
                     handler.post(progressUpdater)
                 } else {
                     handler.removeCallbacks(progressUpdater)
+                    updatePlaybackState()
                 }
             }
 
@@ -204,7 +206,7 @@ class MusicService : Service() {
         val track = list[currentIndex]
 
         // Metadata direct updaten
-        updateMetadata(track)
+        // temporary remove // updateMetadata(track)
         startForegroundWithNotification()
 
         // Embedded album art lazy laden
@@ -282,7 +284,8 @@ class MusicService : Service() {
         val art = track.albumArt ?: vectorToBitmap(R.drawable.ic_music_note_placeholder)
 
         val rawDuration = player.duration
-        val durationMs = if (rawDuration > 0) rawDuration else 0L
+        //val durationMs = if (rawDuration > 0) rawDuration else 0L
+        val durationMs = if (rawDuration > 0) rawDuration else return
 
         val metadata = MediaMetadataCompat.Builder()
             .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track.title)
@@ -298,9 +301,8 @@ class MusicService : Service() {
 
     private fun updatePlaybackState() {
         val isPlaying = player.isPlaying
-        val position = player.currentPosition
-        val buffered = player.bufferedPosition
-        val speed = if (isPlaying) 1.0f else 0.0f
+        //temporary remove //val buffered = player.bufferedPosition
+        //temporary remove //val speed = if (isPlaying) 1.0f else 0.0f
 
         val playbackState = PlaybackStateCompat.Builder()
             .setActions(
@@ -313,10 +315,10 @@ class MusicService : Service() {
             )
             .setState(
                 if (isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED,
-                position,
-                speed
+                player.currentPosition,
+                1.0f   /* temporary remove. Even on pause set it to 1 //speed */
             )
-            .setBufferedPosition(buffered)
+            //temporary remove //.setBufferedPosition(buffered)
             .build()
 
         mediaSession.setPlaybackState(playbackState)
