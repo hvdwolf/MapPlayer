@@ -127,13 +127,16 @@ class MusicService : Service() {
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 updatePlaybackState()
-                if (isPlaying) {
+                /*if (isPlaying) {
                     updatePlaybackState()
                     handler.post(progressUpdater)
                 } else {
                     handler.removeCallbacks(progressUpdater)
                     updatePlaybackState()
-                }
+                }*/
+                handler.removeCallbacks(progressUpdater)
+                handler.post(progressUpdater)
+
             }
 
             override fun onPositionDiscontinuity(reason: Int) {
