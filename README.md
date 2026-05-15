@@ -9,9 +9,9 @@ A folder-based only music player for Android based on the new Google [ExoPlayer]
 * Shows album art
 * Plays all Android supported formats (mp3/aac/flac, etc.)
 * Play File, Play folder, Play folder in random order
-* More menu for "Play folder" and "Play folder in random order" in front and after folder texts: Against all design rules but handy in widescreen Android car units.
+* "More" menu (vertical 3-dots menu) for "Play folder" and "Play folder in random order", left and tight of folder texts (Against all design rules but handy in widescreen Android car units).
 * Shuffle mode: Play folder in random order
-* Search for a number
+* Search for a song/artist/album.
 * Runs on Android 10+
 * Material 3 theme
 * MediaSession broadcasting to be used in widgets or [MediaOverlay](https://github.com/hvdwolf/MediaOverlay).
