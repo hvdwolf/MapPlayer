@@ -9,6 +9,9 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.media.AudioManager
+import android.media.AudioFocusRequest
+import android.media.AudioAttributes
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
@@ -54,6 +57,11 @@ class MusicService : Service() {
     private var shuffledQueue: MutableList<Track> = mutableListOf()
     private var currentIndex: Int = 0
     private var shuffle: Boolean = false
+
+    // For Android Auto
+    private lateinit var audioManager: AudioManager
+    private lateinit var focusRequest: AudioFocusRequest
+
 
     //private var currentTrack: Track? = null
 
@@ -158,12 +166,28 @@ class MusicService : Service() {
 
         })
 
+        // For Android Auto
+        audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+
+        focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+            .setOnAudioFocusChangeListener { focus ->
+                when (focus) {
+                    AudioManager.AUDIOFOCUS_LOSS -> player.pause()
+                    AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> player.pause()
+                    AudioManager.AUDIOFOCUS_GAIN -> player.play()
+                }
+            }
+            .build()
+
 
     }
 
     override fun onBind(intent: Intent?): IBinder = binder
 
     override fun onDestroy() {
+        // For Android auto
+        audioManager.abandonAudioFocusRequest(focusRequest)
+
         mediaSession.release()
         player.release()
         super.onDestroy()
@@ -204,6 +228,10 @@ class MusicService : Service() {
         // Zet de hele lijst in de player en start op currentIndex
         player.setMediaItems(mediaItems, currentIndex, /* startPositionMs = */ 0L)
         player.prepare()
+
+        // Android Auto
+        audioManager.requestAudioFocus(focusRequest)
+
         player.playWhenReady = true
 
         val track = list[currentIndex]
