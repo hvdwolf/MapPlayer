@@ -12,22 +12,28 @@ import android.graphics.Canvas
 import android.media.AudioManager
 import android.media.AudioFocusRequest
 import android.media.AudioAttributes
+import android.net.Uri
 import android.os.Binder
 import android.os.Build
+import android.os.Bundle
 import android.os.IBinder
+import android.support.v4.media.MediaBrowserCompat
 import androidx.core.app.NotificationCompat
 import androidx.media.app.NotificationCompat.MediaStyle
+import androidx.media.MediaBrowserServiceCompat
 import android.support.v4.media.MediaMetadataCompat
+import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.Player
 import xyz.hvdw.mapplayer.R
+import xyz.hvdw.mapplayer.data.MusicRepository
 import xyz.hvdw.mapplayer.model.Track
 import xyz.hvdw.mapplayer.ui.player.PlayerActivity
 
-class MusicService : Service() {
+class MusicService : MediaBrowserServiceCompat() {
 
     interface PlaybackListener {
         fun onTrackChanged()
@@ -81,33 +87,38 @@ class MusicService : Service() {
         super.onCreate()
         createNotificationChannel()
 
+        mediaSession = MediaSessionCompat(this, "MapPlayerSession")
+        // for Android Auto
+        setSessionToken(mediaSession.sessionToken)
+
+        //mediaSession = MediaSessionCompat(this, "MapPlayerSession").apply {
+        mediaSession.setCallback(object : MediaSessionCompat.Callback() {
+            override fun onPlay() {
+                player.playWhenReady = true
+                updatePlaybackState()
+                startForegroundWithNotification()
+            }
+
+            override fun onPause() {
+                player.playWhenReady = false
+                updatePlaybackState()
+                stopForeground(false)
+                updateNotification()
+            }
+
+            override fun onSkipToNext() {
+                skipNext()
+            }
+
+            override fun onSkipToPrevious() {
+                skipPrevious()
+            }
+        })
+        mediaSession.isActive = true
+        //}
+
         player = ExoPlayer.Builder(this).build()
 
-        mediaSession = MediaSessionCompat(this, "MapPlayerSession").apply {
-            setCallback(object : MediaSessionCompat.Callback() {
-                override fun onPlay() {
-                    player.playWhenReady = true
-                    updatePlaybackState()
-                    startForegroundWithNotification()
-                }
-
-                override fun onPause() {
-                    player.playWhenReady = false
-                    updatePlaybackState()
-                    stopForeground(false)
-                    updateNotification()
-                }
-
-                override fun onSkipToNext() {
-                    skipNext()
-                }
-
-                override fun onSkipToPrevious() {
-                    skipPrevious()
-                }
-            })
-            isActive = true
-        }
 
         player.addListener(object : Player.Listener {
 
@@ -182,7 +193,94 @@ class MusicService : Service() {
 
     }
 
-    override fun onBind(intent: Intent?): IBinder = binder
+    // For Android Auto
+    override fun onGetRoot(
+        clientPackageName: String,
+        clientUid: Int,
+        rootHints: Bundle?
+    ): BrowserRoot {
+        // Android Auto requires a non-null root
+        return BrowserRoot("__ROOT__", null)
+    }
+
+    override fun onLoadChildren(
+        parentId: String,
+        result: Result<MutableList<MediaBrowserCompat.MediaItem>>
+    ) {
+        val items = mutableListOf<MediaBrowserCompat.MediaItem>()
+
+        // ---------- ROOT: list top-level folders ----------
+        if (parentId == "__ROOT__") {
+            val topFolders = MusicRepository.listSubfolders(this, null)
+
+            for (folder in topFolders) {
+                val desc = MediaDescriptionCompat.Builder()
+                    .setMediaId("folder:${folder.uri}")
+                    .setTitle(folder.name)
+                    .build()
+
+                items.add(
+                    MediaBrowserCompat.MediaItem(
+                        desc,
+                        MediaBrowserCompat.MediaItem.FLAG_BROWSABLE
+                    )
+                )
+            }
+
+            result.sendResult(items)
+            return
+        }
+
+        // ---------- FOLDER: list tracks ----------
+        if (parentId.startsWith("folder:")) {
+            val folderUriString = parentId.removePrefix("folder:")
+            val folderUri = Uri.parse(folderUriString)
+
+            val tracks = MusicRepository.getTracksInFolder(folderUri)
+
+            for (track in tracks) {
+                val desc = MediaDescriptionCompat.Builder()
+                    .setMediaId("track:${track.uri}")
+                    .setTitle(track.title)
+                    .setSubtitle(track.artist)
+                    .setMediaUri(track.uri) // already a Uri
+                    .build()
+
+                items.add(
+                    MediaBrowserCompat.MediaItem(
+                        desc,
+                        MediaBrowserCompat.MediaItem.FLAG_PLAYABLE
+                    )
+                )
+            }
+
+            result.sendResult(items)
+            return
+        }
+
+        // ---------- Unknown parent ----------
+        result.sendResult(mutableListOf())
+    }
+
+
+    //override fun onBind(intent: Intent?): IBinder = binder
+    override fun onBind(intent: Intent?): IBinder? {
+        val action = intent?.action
+        val pkg = intent?.`package`
+
+        return if (
+            pkg == "com.google.android.projection.gearhead" ||   // Google AA
+            pkg == "com.google.android.gms" ||                   // GMS AA
+            pkg?.startsWith("com.syu") == true ||                // FYT AA
+            pkg?.contains("link") == true ||
+            pkg?.contains("car") == true                         // Carlink / FYT variants 
+        ) {
+            super.onBind(intent)    // MediaBrowser binder
+        } else {
+            binder   // the LocalBinder
+        }
+        //return super.onBind(intent)
+    }
 
     override fun onDestroy() {
         // For Android auto
