@@ -4,30 +4,32 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.media.AudioManager
 import android.media.AudioFocusRequest
-import android.media.AudioAttributes
 import android.net.Uri
-import android.os.Binder
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
-import android.support.v4.media.MediaBrowserCompat
+
 import androidx.core.app.NotificationCompat
-import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.MediaBrowserServiceCompat
-import android.support.v4.media.MediaMetadataCompat
+import androidx.media.app.NotificationCompat.MediaStyle
+
+import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaDescriptionCompat
+import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
+
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.Player
+
 import xyz.hvdw.mapplayer.R
 import xyz.hvdw.mapplayer.data.MusicRepository
 import xyz.hvdw.mapplayer.model.Track
@@ -49,12 +51,6 @@ class MusicService : MediaBrowserServiceCompat() {
         const val ACTION_TOGGLE = "ACTION_TOGGLE"
         const val ACTION_STOP = "ACTION_STOP"
     }
-
-    inner class LocalBinder : Binder() {
-        fun getService(): MusicService = this@MusicService
-    }
-
-    private val binder = LocalBinder()
 
     private lateinit var player: ExoPlayer
     private lateinit var mediaSession: MediaSessionCompat
@@ -87,11 +83,13 @@ class MusicService : MediaBrowserServiceCompat() {
         super.onCreate()
         createNotificationChannel()
 
+        // Preload library. Necessary for Android Auto
+        MusicRepository.ensureLibraryLoaded(applicationContext)
+
         mediaSession = MediaSessionCompat(this, "MapPlayerSession")
         // for Android Auto
         setSessionToken(mediaSession.sessionToken)
 
-        //mediaSession = MediaSessionCompat(this, "MapPlayerSession").apply {
         mediaSession.setCallback(object : MediaSessionCompat.Callback() {
             override fun onPlay() {
                 player.playWhenReady = true
@@ -113,12 +111,28 @@ class MusicService : MediaBrowserServiceCompat() {
             override fun onSkipToPrevious() {
                 skipPrevious()
             }
+
+             // Required for MediaBrowserCompat + Android Auto + your PlayerActivity
+             override fun onPlayFromMediaId(mediaId: String?, extras: Bundle?) {
+                 if (mediaId == null) return
+
+                 if (mediaId.startsWith("folder:")) {
+                     val folderUriStr = mediaId.removePrefix("folder:")
+                     val folderUri = Uri.parse(folderUriStr)
+
+                     val shuffle = extras?.getBoolean("shuffle", false) ?: false
+                     val startIndex = extras?.getInt("startIndex", 0) ?: 0
+
+                     val tracks = MusicRepository.getTracksInFolder(folderUri)
+                     if (tracks.isNotEmpty()) {
+                         playTracks(tracks, startIndex, shuffle)
+                     }
+                 }
+             }
         })
         mediaSession.isActive = true
-        //}
 
         player = ExoPlayer.Builder(this).build()
-
 
         player.addListener(object : Player.Listener {
 
@@ -200,7 +214,7 @@ class MusicService : MediaBrowserServiceCompat() {
         rootHints: Bundle?
     ): BrowserRoot {
         // Android Auto requires a non-null root
-        return BrowserRoot("__ROOT__", null)
+        return BrowserRoot("__ROOT__", Bundle())
     }
 
     override fun onLoadChildren(
@@ -211,25 +225,25 @@ class MusicService : MediaBrowserServiceCompat() {
 
         // ---------- ROOT: list top-level folders ----------
         if (parentId == "__ROOT__") {
-            val topFolders = MusicRepository.listSubfolders(this, null)
+            val musicRoot = Uri.parse("file:///storage/emulated/0/Music")
+            val topFolders = MusicRepository.listSubfolders(this, musicRoot)
 
-            for (folder in topFolders) {
+            val items = topFolders.map { folder ->
                 val desc = MediaDescriptionCompat.Builder()
                     .setMediaId("folder:${folder.uri}")
                     .setTitle(folder.name)
                     .build()
 
-                items.add(
-                    MediaBrowserCompat.MediaItem(
-                        desc,
-                        MediaBrowserCompat.MediaItem.FLAG_BROWSABLE
-                    )
+                MediaBrowserCompat.MediaItem(
+                    desc,
+                    MediaBrowserCompat.MediaItem.FLAG_BROWSABLE
                 )
             }
 
-            result.sendResult(items)
+            result.sendResult(items.toMutableList())
             return
         }
+
 
         // ---------- FOLDER: list tracks ----------
         if (parentId.startsWith("folder:")) {
@@ -263,24 +277,7 @@ class MusicService : MediaBrowserServiceCompat() {
     }
 
 
-    //override fun onBind(intent: Intent?): IBinder = binder
-    override fun onBind(intent: Intent?): IBinder? {
-        val action = intent?.action
-        val pkg = intent?.`package`
-
-        return if (
-            pkg == "com.google.android.projection.gearhead" ||   // Google AA
-            pkg == "com.google.android.gms" ||                   // GMS AA
-            pkg?.startsWith("com.syu") == true ||                // FYT AA
-            pkg?.contains("link") == true ||
-            pkg?.contains("car") == true                         // Carlink / FYT variants 
-        ) {
-            super.onBind(intent)    // MediaBrowser binder
-        } else {
-            binder   // the LocalBinder
-        }
-        //return super.onBind(intent)
-    }
+    override fun onBind(intent: Intent?): IBinder? = super.onBind(intent)
 
     override fun onDestroy() {
         // For Android auto

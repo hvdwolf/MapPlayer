@@ -1,25 +1,25 @@
 package xyz.hvdw.mapplayer.ui.player
 
 import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
-import android.content.ServiceConnection
-import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
-import android.os.IBinder
 import android.os.Looper
-import android.util.Log
 import android.view.View
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+
+import android.support.v4.media.MediaBrowserCompat
+import android.support.v4.media.MediaMetadataCompat
+import android.support.v4.media.session.MediaControllerCompat
+import android.support.v4.media.session.PlaybackStateCompat
+
 import xyz.hvdw.mapplayer.R
 import xyz.hvdw.mapplayer.data.MusicRepository
-import xyz.hvdw.mapplayer.model.Track
 import xyz.hvdw.mapplayer.player.MusicService
 
 class PlayerActivity : AppCompatActivity() {
@@ -29,10 +29,6 @@ class PlayerActivity : AppCompatActivity() {
         const val EXTRA_SHUFFLE = "extra_shuffle"
         const val EXTRA_START_INDEX = "extra_start_index"
     }
-
-    private var service: MusicService? = null
-    private var bound = false
-    private var shuffleMode = false
 
     private lateinit var imgAlbumArt: ImageView
     private lateinit var txtTitle: TextView
@@ -47,6 +43,9 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var btnNext: ImageButton
     private lateinit var txtShuffle: TextView
 
+    private lateinit var mediaBrowser: MediaBrowserCompat
+    private var mediaController: MediaControllerCompat? = null
+
     private val handler = Handler(Looper.getMainLooper())
     private val updateRunnable = object : Runnable {
         override fun run() {
@@ -55,41 +54,37 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
-    private val connection = object : ServiceConnection {
-        override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
-            val b = binder as MusicService.LocalBinder
-            service = b.getService()
-            service?.playbackListener = playbackListener
-            bound = true
-
-            // If service is already playing, DO NOT restart playback
-            if (service?.getCurrentTrack() != null) {
-                updateUi()
-                handler.post(updateRunnable)
-                return
+    // --------------------------------------------------------------------
+    // MEDIA BROWSER CONNECTION
+    // --------------------------------------------------------------------
+    private val browserConnectionCallback = object : MediaBrowserCompat.ConnectionCallback() {
+        override fun onConnected() {
+            val token = mediaBrowser.sessionToken
+            mediaController = MediaControllerCompat(this@PlayerActivity, token).apply {
+                registerCallback(controllerCallback)
             }
+            MediaControllerCompat.setMediaController(this@PlayerActivity, mediaController)
 
-            // Only start playback if nothing is playing yet
             startPlaybackIfNeeded()
-
             updateUi()
             handler.post(updateRunnable)
         }
+    }
 
+    private val controllerCallback = object : MediaControllerCompat.Callback() {
+        override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
+            updateUi()
+        }
 
-        override fun onServiceDisconnected(name: ComponentName?) {
-            bound = false
-            service = null
-            handler.removeCallbacks(updateRunnable)
+        override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
+            updatePlayPauseIcon()
+            updateProgress()
         }
     }
 
-    private val playbackListener = object : MusicService.PlaybackListener {
-        override fun onTrackChanged() {
-            runOnUiThread { updateUi() }
-        }
-    }
-
+    // --------------------------------------------------------------------
+    // LIFECYCLE
+    // --------------------------------------------------------------------
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_player)
@@ -107,22 +102,37 @@ class PlayerActivity : AppCompatActivity() {
         btnNext = findViewById(R.id.btnNext)
         txtShuffle = findViewById(R.id.txtShuffle)
 
+        mediaBrowser = MediaBrowserCompat(
+            this,
+            ComponentName(this, MusicService::class.java),
+            browserConnectionCallback,
+            null
+        )
+
         btnExit.setOnClickListener {
             val intent = Intent(this, MusicService::class.java)
-            intent.action = "ACTION_STOP"
+            intent.action = MusicService.ACTION_STOP
             startService(intent)
             finish()
         }
-        btnPrev.setOnClickListener { service?.skipPrevious() }
-        btnNext.setOnClickListener { service?.skipNext() }
+
+        btnPrev.setOnClickListener {
+            mediaController?.transportControls?.skipToPrevious()
+        }
+
+        btnNext.setOnClickListener {
+            mediaController?.transportControls?.skipToNext()
+        }
+
         btnPlayPause.setOnClickListener {
-            service?.togglePlayPause()
-            updatePlayPauseIcon()
+            val playing = mediaController?.playbackState?.state == PlaybackStateCompat.STATE_PLAYING
+            if (playing) mediaController?.transportControls?.pause()
+            else mediaController?.transportControls?.play()
         }
 
         findViewById<ImageButton>(R.id.btnClose).setOnClickListener {
             val intent = Intent(this, MusicService::class.java)
-            intent.action = "ACTION_STOP"
+            intent.action = MusicService.ACTION_STOP
             startService(intent)
             finish()
         }
@@ -130,9 +140,10 @@ class PlayerActivity : AppCompatActivity() {
         seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
-                    val duration = service?.getDuration() ?: 0L
+                    val metadata = mediaController?.metadata ?: return
+                    val duration = metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION)
                     val newPos = (duration * progress / 1000L)
-                    service?.playerSeekTo(newPos)
+                    mediaController?.transportControls?.seekTo(newPos)
                 }
             }
 
@@ -143,18 +154,13 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        val intent = Intent(this, MusicService::class.java)
-        startService(intent)
-        bindService(intent, connection, Context.BIND_AUTO_CREATE)
+        mediaBrowser.connect()
     }
 
     override fun onStop() {
         super.onStop()
-        service?.playbackListener = null
-        if (bound) {
-            unbindService(connection)
-            bound = false
-        }
+        mediaController?.unregisterCallback(controllerCallback)
+        mediaBrowser.disconnect()
         handler.removeCallbacks(updateRunnable)
     }
 
@@ -162,77 +168,34 @@ class PlayerActivity : AppCompatActivity() {
     // PLAYBACK START
     // --------------------------------------------------------------------
     private fun startPlaybackIfNeeded() {
-        val svc = service ?: return
-
-        // If service is already playing something, DO NOT restart playback
-        if (svc.getCurrentTrack() != null) {
-            updateUi()
-            return
-        }
-
-        // Normal or shuffled playback mode
         val folderUriStr = intent.getStringExtra(EXTRA_FOLDER_URI) ?: return
         val shuffle = intent.getBooleanExtra(EXTRA_SHUFFLE, false)
         val startIndex = intent.getIntExtra(EXTRA_START_INDEX, 0)
 
-        val folderUri = Uri.parse(folderUriStr)
-
-        // 1. Try cached folder list first (INSTANT)
-        val cached = MusicRepository.getCachedTracksInFolder(folderUri)
-        if (cached != null) {
-            svc.playTracks(cached, startIndex, shuffle)
-            runOnUiThread { updateUi() }
-            return
+        val extras = Bundle().apply {
+            putString("folderUri", folderUriStr)
+            putBoolean("shuffle", shuffle)
+            putInt("startIndex", startIndex)
         }
 
-        // 2. Fallback: scan folder ONCE if cache is empty
-        MusicRepository.listTracksInFolder(
-            this,
-            folderUri
-        ) { updatedTracks ->
-            if (updatedTracks.isNotEmpty()) {
-                svc.playTracks(updatedTracks, startIndex, shuffle)
-                runOnUiThread { updateUi() }
-            }
-        }
-
+        mediaController?.transportControls?.playFromMediaId("folder:$folderUriStr", extras)
     }
-
 
     // --------------------------------------------------------------------
     // UI UPDATES
     // --------------------------------------------------------------------
     private fun updateUi() {
-        val track = service?.getCurrentTrack() ?: return
+        val metadata = mediaController?.metadata ?: return
 
-        txtTitle.text = track.title
-        txtArtist.text = track.artist ?: ""
-        txtAlbum.text = track.album ?: ""
+        txtTitle.text = metadata.getString(MediaMetadataCompat.METADATA_KEY_TITLE) ?: ""
+        txtArtist.text = metadata.getString(MediaMetadataCompat.METADATA_KEY_ARTIST) ?: ""
+        txtAlbum.text = metadata.getString(MediaMetadataCompat.METADATA_KEY_ALBUM) ?: ""
 
-        // Reset time labels for new track
-        txtCurrentTime.text = "0:00"
-        txtTotalTime.text = formatTime(service?.getDuration() ?: 0L)
-
-        // Album art
-        if (track.albumArt != null) {
-            imgAlbumArt.setImageBitmap(track.albumArt)
+        val art = metadata.getBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART)
+        if (art != null) {
+            imgAlbumArt.setImageBitmap(art)
         } else {
-            Thread {
-                val bmp = MusicRepository.loadEmbeddedAlbumArt(this, track.uri)
-
-                if (bmp != null) {
-                    track.albumArt = bmp
-
-                    runOnUiThread {
-                        imgAlbumArt.setImageBitmap(bmp)
-                        service?.refreshMetadata()
-                    }
-                } else {
-                    runOnUiThread {
-                        imgAlbumArt.setImageResource(R.drawable.ic_music_note)
-                    }
-                }
-            }.start()
+            imgAlbumArt.setImageResource(R.drawable.ic_music_note)
         }
 
         updatePlayPauseIcon()
@@ -241,29 +204,22 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun updatePlayPauseIcon() {
-        val playing = service?.isPlaying() ?: false
+        val playing = mediaController?.playbackState?.state == PlaybackStateCompat.STATE_PLAYING
         btnPlayPause.setImageResource(if (playing) R.drawable.ic_pause else R.drawable.ic_play)
     }
 
     private fun updateShuffleTxt() {
         val shuffle = intent.getBooleanExtra(EXTRA_SHUFFLE, false)
-        txtShuffle.text = getString(R.string.shuffle_mode)
-        //val txtShuffleText = this.getString(R.string.shuffle_mode)
-        //Log.d("MapPlayer_PlayerActivity", "Entering the updateShuffleText with shuffle value $shuffle and txtShuffleText $txtShuffleText")
-        if (shuffle) {
-            txtShuffle.visibility = View.VISIBLE
-        } else {
-            txtShuffle.visibility = View.GONE
-        }
+        txtShuffle.visibility = if (shuffle) View.VISIBLE else View.GONE
     }
 
     private fun updateProgress() {
-        val svc = service ?: return
+        val metadata = mediaController?.metadata ?: return
+        val state = mediaController?.playbackState ?: return
 
-        val duration = svc.getDuration()
-        val position = svc.getPosition()
+        val duration = metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION)
+        val position = state.position
 
-        // Seekbar
         if (duration > 0) {
             val progress = (position * 1000L / duration).toInt()
             seekBar.progress = progress
@@ -271,7 +227,6 @@ class PlayerActivity : AppCompatActivity() {
             seekBar.progress = 0
         }
 
-        // Time labels
         txtCurrentTime.text = formatTime(position)
         txtTotalTime.text = formatTime(duration)
     }
