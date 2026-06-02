@@ -252,8 +252,10 @@ class PlayerActivity : AppCompatActivity() {
         //Log.d("MapPlayer_PlayerActivity", "Entering the updateShuffleText with shuffle value $shuffle and txtShuffleText $txtShuffleText")
         if (shuffle) {
             txtShuffle.visibility = View.VISIBLE
+            //txtShuffle.text = getString(R.string.shuffle_mode)
         } else {
             txtShuffle.visibility = View.GONE
+            //txtShuffle.text = " "
         }
     }
 
