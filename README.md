@@ -6,6 +6,7 @@ A folder-based only music player for Android based on the new Google [ExoPlayer]
 * Plays all audio files in a folder, sorted by filename (natural sorting)
 * Regular file browser navigation
 * After first start you need to do a (long) initial library scan. If you add new folders/files, modify files or remove files/folders, you need to do a rescan.
+* If the library scan detects errors in your mp3 in metadata or audio or both, it will generate an error log which you can open and share after the scan.
 * Shows album art
 * Plays all Android supported formats (mp3/aac/flac, etc.)
 * Play File, Play folder, Play folder in random order
