@@ -18,6 +18,9 @@ object LibraryScanner {
 
     private const val TAG = "LibraryScanner"
     private const val LIBRARY_FILE = "library.json"
+    @Volatile
+    var errorLogWritten: Boolean = false
+
 
     interface ScanProgressListener {
         fun onProgress(current: Int, total: Int)
@@ -43,6 +46,9 @@ object LibraryScanner {
     ) {
         Thread {
             try {
+                errorLogWritten = false
+                //appendErrorLog(context, "TEST: scanLibrary gestart", null)
+
                 val musicDir =
                     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC)
 
@@ -108,89 +114,137 @@ object LibraryScanner {
         totalFiles: Int,
         currentFileRef: IntArray
     ) {
-        if (!dir.isDirectory || dir.name.startsWith(".")) return
+        try {
+            if (!dir.isDirectory || dir.name.startsWith(".")) return
 
-        val folderUri = dir.toURI().toString()
-        // 1. Try cover.jpg / folder.jpg
-        var finalCoverArtPath = findCoverArtFile(dir)?.absolutePath
+            val folderUri = dir.toURI().toString()
 
-        // 2. Collect audio files in this folder
-        val tracksInThisFolder = dir.listFiles()?.filter { f ->
-            !f.isDirectory && isAudioFile(f.name)
-        } ?: emptyList()
-
-        // 3. If no cover.jpg found → try embedded art from first track
-        if (finalCoverArtPath == null && tracksInThisFolder.isNotEmpty()) {
+            // 1. Try cover.jpg / folder.jpg
+            var finalCoverArtPath: String? = null
             try {
-                val firstTrack = tracksInThisFolder.first()
-                val uri = Uri.parse(firstTrack.toURI().toString())
-
-                val bmp = MusicRepository.loadEmbeddedAlbumArt(context, uri)
-                if (bmp != null) {
-                    val thumb = Bitmap.createScaledBitmap(bmp, 256, 256, true)
-
-                    val outFile = File(context.cacheDir, "thumb_${thumb.hashCode()}.jpg")
-                    FileOutputStream(outFile).use { os ->
-                        thumb.compress(Bitmap.CompressFormat.JPEG, 85, os)
-                    }
-
-                    finalCoverArtPath = outFile.absolutePath
-                }
+                finalCoverArtPath = findCoverArtFile(dir)?.absolutePath
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to extract embedded art for folder ${dir.name}", e)
+                val msg = "Failed to check cover art in folder ${dir.absolutePath}: ${e.message}"
+                Log.w(TAG, msg)
+                appendErrorLog(context, msg, e)
             }
-        }
 
-        // 4. Store folder entry
-        folders += LibraryFolder(
-            uri = folderUri,
-            name = dir.name,
-            parentUri = parentUri,
-            coverArtPath = finalCoverArtPath
-        )
-
-
-        dir.listFiles()?.forEach { f ->
-            if (f.isDirectory) {
-                scanFolderRecursive(
-                    context = context,
-                    dir = f,
-                    parentUri = folderUri,
-                    folders = folders,
-                    tracks = tracks,
-                    listener = listener,
-                    totalFiles = totalFiles,
-                    currentFileRef = currentFileRef
-                )
-            } else if (isAudioFile(f.name)) {
-
-                // Update progress
-                currentFileRef[0]++
-                listener?.onProgress(currentFileRef[0], totalFiles)
-
-                val trackUri = f.toURI().toString()
-                val (title, artist, album, embeddedBmp, duration) = extractMetadataWithArt(f)
-
-                val thumbnailPath = if (embeddedBmp != null) {
-                    val key = sha1(f.absolutePath)
-                    saveThumbnail(context, embeddedBmp, key)
-                } else null
-
-                tracks += LibraryTrack(
-                    uri = trackUri,
-                    folderUri = folderUri,
-                    title = title,
-                    artist = artist,
-                    album = album,
-                    duration = duration,
-                    thumbnailPath = thumbnailPath,
-                    metadataLoaded = true
-                )
-
-
+            // 2. Collect audio files in this folder
+            val tracksInThisFolder = try {
+                dir.listFiles()?.filter { f ->
+                    !f.isDirectory && isAudioFile(f.name)
+                } ?: emptyList()
+            } catch (e: Exception) {
+                val msg = "Failed to list files in folder ${dir.absolutePath}: ${e.message}"
+                Log.w(TAG, msg)
+                appendErrorLog(context, msg, e)
+                emptyList()
             }
+
+            // 3. If no cover.jpg found → try embedded art from first track
+            if (finalCoverArtPath == null && tracksInThisFolder.isNotEmpty()) {
+                try {
+                    val firstTrack = tracksInThisFolder.first()
+                    val meta = extractMetadataWithArt(context, firstTrack)
+                    if (meta.art != null) {
+                        val thumb = Bitmap.createScaledBitmap(meta.art, 256, 256, true)
+                        val outFile = File(context.cacheDir, "thumb_${thumb.hashCode()}.jpg")
+                        FileOutputStream(outFile).use { os ->
+                            thumb.compress(Bitmap.CompressFormat.JPEG, 85, os)
+                        }
+                        finalCoverArtPath = outFile.absolutePath
+                    }
+                } catch (e: Exception) {
+                    val msg = "Failed to extract embedded art for folder ${dir.absolutePath}: ${e.message}"
+                    Log.w(TAG, msg)
+                    appendErrorLog(context, msg, e)
+                } catch (e: Error) {
+                    val msg = "NATIVE CRASH while extracting embedded art for ${dir.absolutePath}: ${e.message}"
+                    Log.e(TAG, msg)
+                    appendErrorLog(context, msg, e)
+                }
+            }
+
+            // 4. Store folder entry
+            folders += LibraryFolder(
+                uri = folderUri,
+                name = dir.name,
+                parentUri = parentUri,
+                coverArtPath = finalCoverArtPath
+            )
+
+            // 5. Scan children
+            val children = try {
+                dir.listFiles() ?: emptyArray()
+            } catch (e: Exception) {
+                val msg = "Failed to list directory ${dir.absolutePath}: ${e.message}"
+                Log.w(TAG, msg)
+                appendErrorLog(context, msg, e)
+                emptyArray()
+            }
+
+            for (f in children) {
+                if (f.isDirectory) {
+                    scanFolderRecursive(
+                        context = context,
+                        dir = f,
+                        parentUri = folderUri,
+                        folders = folders,
+                        tracks = tracks,
+                        listener = listener,
+                        totalFiles = totalFiles,
+                        currentFileRef = currentFileRef
+                    )
+                } else if (isAudioFile(f.name)) {
+
+                    // Update progress
+                    currentFileRef[0]++
+                    listener?.onProgress(currentFileRef[0], totalFiles)
+
+                    try {
+                        val trackUri = f.toURI().toString()
+                        val meta = extractMetadataWithArt(context, f)
+
+                        val thumbnailPath = if (meta.art != null) {
+                            val key = sha1(f.absolutePath)
+                            saveThumbnail(context, meta.art, key)
+                        } else null
+
+                        tracks += LibraryTrack(
+                            uri = trackUri,
+                            folderUri = folderUri,
+                            title = meta.title ?: f.nameWithoutExtension,
+                            artist = meta.artist,
+                            album = meta.album,
+                            duration = meta.duration,
+                            thumbnailPath = thumbnailPath,
+                            metadataLoaded = true
+                        )
+
+                    } catch (e: Exception) {
+                        val msg = "Failed to process audio file ${f.absolutePath}: ${e.message}"
+                        Log.w(TAG, msg)
+                        appendErrorLog(context, msg, e)
+                    } catch (e: Error) {
+                        val msg = "NATIVE CRASH while processing ${f.absolutePath}: ${e.message}"
+                        Log.e(TAG, msg)
+                        appendErrorLog(context, msg, e)
+                    }
+                }
+            }
+
+        } catch (e: Exception) {
+            val msg = "Unexpected exception in scanFolderRecursive for ${dir.absolutePath}: ${e.message}"
+            Log.e(TAG, msg)
+            appendErrorLog(context, msg, e)
+
+        } catch (e: Error) {
+            val msg = "NATIVE CRASH in scanFolderRecursive for ${dir.absolutePath}: ${e.message}"
+            Log.e(TAG, msg)
+            appendErrorLog(context, msg, e)
         }
     }
+
 
     private fun isAudioFile(name: String): Boolean {
         val lower = name.lowercase()
@@ -244,24 +298,80 @@ object LibraryScanner {
         val duration: Long
     )
 
-    fun extractMetadataWithArt(file: File): MetaResult {
-        val mmr = MediaMetadataRetriever()
-        mmr.setDataSource(file.absolutePath)
+    fun extractMetadataWithArt(context: Context, file: File): MetaResult {
+        var title: String? = null
+        var artist: String? = null
+        var album: String? = null
+        var art: Bitmap? = null
+        var duration = 0L
 
-        val art = mmr.embeddedPicture?.let { bytes ->
-            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        val mmr = MediaMetadataRetriever()
+
+        try {
+            // Dit is de meest crashgevoelige call
+            try {
+                mmr.setDataSource(file.absolutePath)
+            } catch (e: Exception) {
+                val msg = "setDataSource() failed for ${file.absolutePath}"
+                Log.w(TAG, msg, e)
+                appendErrorLog(context, msg, e)
+                return MetaResult(file.nameWithoutExtension, null, null, null, 0L)
+            } catch (e: Error) {
+                val msg = "NATIVE CRASH in setDataSource() for ${file.absolutePath}"
+                Log.e(TAG, msg, e)
+                appendErrorLog(context, msg, e)
+                return MetaResult(file.nameWithoutExtension, null, null, null, 0L)
+            }
+
+            fun safeGet(block: () -> String?): String? =
+                try { block() } catch (e: Exception) {
+                    val msg = "Metadata read failed for ${file.absolutePath}: ${e.message}"
+                    Log.w(TAG, msg)
+                    appendErrorLog(context, msg, e)
+                    null
+                }
+
+            fun safeArt(): Bitmap? =
+                try {
+                    mmr.embeddedPicture?.let { bytes ->
+                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                    }
+                } catch (e: Exception) {
+                    val msg = "Embedded art decode failed for ${file.absolutePath}: ${e.message}"
+                    Log.w(TAG, msg)
+                    appendErrorLog(context, msg, e)
+                    null
+                }
+
+            title = safeGet { mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE) }
+            artist = safeGet { mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST) }
+            album = safeGet { mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM) }
+
+            duration = safeGet { mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION) }
+                ?.toLongOrNull() ?: 0L
+
+            art = safeArt()
+
+        } catch (e: Exception) {
+            val msg = "Unexpected metadata exception for ${file.absolutePath}: ${e.message}"
+            Log.w(TAG, msg)
+            appendErrorLog(context, msg, e)
+
+        } catch (e: Error) {
+            val msg = "NATIVE CRASH in metadata for ${file.absolutePath}: ${e.message}"
+            Log.e(TAG, msg)
+            appendErrorLog(context, msg, e)
+
+        } finally {
+            try { mmr.release() } catch (_: Exception) {}
         }
 
-        val title = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
-        val artist = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
-        val album = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)
-        val durationStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
-        val duration = durationStr?.toLongOrNull() ?: 0L
-
-        mmr.release()
+        if (title.isNullOrBlank()) title = file.nameWithoutExtension
 
         return MetaResult(title, artist, album, art, duration)
     }
+
+
 
 
     fun loadLibrary(context: Context): LibraryDb? {
@@ -291,6 +401,35 @@ object LibraryScanner {
         val md = MessageDigest.getInstance("SHA-1")
         val bytes = md.digest(text.toByteArray())
         return bytes.joinToString("") { "%02x".format(it) }
+    }
+
+    private fun appendErrorLog(context: Context, message: String, throwable: Throwable? = null) {
+        try {
+            errorLogWritten = true
+
+            val baseDir = context.getExternalFilesDir(null)  // /storage/emulated/0/Android/data/…/files
+            val logDir = File(baseDir, "_MapPlayer_Log")
+            if (!logDir.exists()) logDir.mkdirs()
+
+            val logFile = File(logDir, "error.log")
+
+            logFile.appendText(
+                buildString {
+                    append("=== ERROR ===\n")
+                    append(message)
+                    append("\n")
+                    if (throwable != null) {
+                        append(throwable.toString())
+                        append("\n")
+                        throwable.stackTrace.forEach { append("    at $it\n") }
+                    }
+                    append("\n")
+                }
+            )
+
+        } catch (e: Exception) {
+            Log.e("LibraryScanner", "Failed to write error.log", e)
+        }
     }
 
 }

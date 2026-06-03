@@ -16,6 +16,7 @@ import android.net.Uri
 import android.os.Binder
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.os.IBinder
 import android.support.v4.media.MediaBrowserCompat
 import androidx.core.app.NotificationCompat
@@ -68,9 +69,6 @@ class MusicService : MediaBrowserServiceCompat() {
     private lateinit var audioManager: AudioManager
     private lateinit var focusRequest: AudioFocusRequest
 
-
-    //private var currentTrack: Track? = null
-
     var playbackListener: PlaybackListener? = null
 
     private val handler = android.os.Handler(android.os.Looper.getMainLooper())
@@ -91,7 +89,6 @@ class MusicService : MediaBrowserServiceCompat() {
         // for Android Auto
         setSessionToken(mediaSession.sessionToken)
 
-        //mediaSession = MediaSessionCompat(this, "MapPlayerSession").apply {
         mediaSession.setCallback(object : MediaSessionCompat.Callback() {
             override fun onPlay() {
                 player.playWhenReady = true
@@ -115,7 +112,6 @@ class MusicService : MediaBrowserServiceCompat() {
             }
         })
         mediaSession.isActive = true
-        //}
 
         player = ExoPlayer.Builder(this).build()
 
@@ -146,13 +142,7 @@ class MusicService : MediaBrowserServiceCompat() {
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 updatePlaybackState()
-                /*if (isPlaying) {
-                    updatePlaybackState()
-                    handler.post(progressUpdater)
-                } else {
-                    handler.removeCallbacks(progressUpdater)
-                    updatePlaybackState()
-                }*/
+
                 handler.removeCallbacks(progressUpdater)
                 handler.post(progressUpdater)
 
@@ -211,8 +201,10 @@ class MusicService : MediaBrowserServiceCompat() {
 
         // ---------- ROOT: list top-level folders ----------
         if (parentId == "__ROOT__") {
-            val topFolders = MusicRepository.listSubfolders(this, null)
-
+            val musicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC)
+            val musicRoot = Uri.fromFile(musicDir)
+            val topFolders = MusicRepository.listSubfolders(this, musicRoot)
+        
             for (folder in topFolders) {
                 val desc = MediaDescriptionCompat.Builder()
                     .setMediaId("folder:${folder.uri}")
@@ -335,7 +327,6 @@ class MusicService : MediaBrowserServiceCompat() {
         val track = list[currentIndex]
 
         // Metadata direct updaten
-        // temporary remove // updateMetadata(track)
         startForegroundWithNotification()
 
         // Embedded album art lazy laden
@@ -430,8 +421,6 @@ class MusicService : MediaBrowserServiceCompat() {
 
     private fun updatePlaybackState() {
         val isPlaying = player.isPlaying
-        //temporary remove //val buffered = player.bufferedPosition
-        //temporary remove //val speed = if (isPlaying) 1.0f else 0.0f
 
         val playbackState = PlaybackStateCompat.Builder()
             .setActions(

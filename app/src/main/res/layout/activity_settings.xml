@@ -60,4 +60,13 @@
         android:text="@string/settings_rescan_library"
         android:layout_marginTop="32dp" />
 
+    <Button
+        android:id="@+id/btnOpenLog"
+        style="@style/Widget.MapPlayer.Button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:text="@string/settings_open_log"
+        android:layout_marginTop="32dp" />
+
 </LinearLayout>

@@ -1,6 +1,7 @@
 package xyz.hvdw.mapplayer.ui.settings
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -9,6 +10,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.appbar.MaterialToolbar
+import java.io.File
 import xyz.hvdw.mapplayer.R
 import xyz.hvdw.mapplayer.data.LibraryScanner
 import xyz.hvdw.mapplayer.data.MusicRepository
@@ -20,6 +22,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var txtProgress: TextView
     private lateinit var progressScanning: ProgressBar
     private lateinit var btnRescan: Button
+    private lateinit var btnOpenLog: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,6 +36,7 @@ class SettingsActivity : AppCompatActivity() {
         txtProgress = findViewById(R.id.txtProgress)
         progressScanning = findViewById(R.id.progressScanning)
         btnRescan = findViewById(R.id.btnRescan)
+        btnOpenLog = findViewById<Button>(R.id.btnOpenLog)
 
         updateStatus()
 
@@ -66,9 +70,30 @@ class SettingsActivity : AppCompatActivity() {
                     hideScanningUI()
                     txtStatus.text = getString(R.string.settings_scan_complete)
                     txtProgress.visibility = View.GONE
+
+                    //val btnOpenLog = findViewById<Button>(R.id.btnOpenLog)
+                    if (LibraryScanner.errorLogWritten) {
+                        btnOpenLog.visibility = View.VISIBLE
+                        btnOpenLog.isEnabled = true
+
+                        btnOpenLog.setOnClickListener {
+                            startActivity(Intent(this, LogViewerActivity::class.java))
+                        }
+                    } else {
+                        btnOpenLog.visibility = View.GONE
+                    }
                 }
             }
         }
+
+        btnOpenLog.setOnClickListener {
+            val intent = Intent(Intent.ACTION_VIEW)
+            val logFile = File(getExternalFilesDir(null), "_MapPlayer_Log/error.log")
+            intent.setDataAndType(Uri.fromFile(logFile), "text/plain")
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            startActivity(intent)
+        }
+
     }
 
     private fun updateStatus() {

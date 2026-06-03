@@ -31,4 +31,10 @@
     <string name="menu_search">Zoeken</string>
     <string name="search_hint">Zoek op titel, artiest, of album</string>
 
+    <string name="settings_open_log">Open scanning error log"</string>
+    <string name="logviewer_no_log">Geen error log gevonden.</string>
+    <string name="logviewer_deleted">Log verwijderd.</string>
+    <string name="logviewer_delete">Verwijder log</string>
+    <string name="logviewer_share">Deel log</string>
+
 </resources>
