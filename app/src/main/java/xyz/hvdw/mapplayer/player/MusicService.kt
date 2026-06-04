@@ -261,6 +261,7 @@ class MusicService : MediaBrowserServiceCompat() {
         val pkg = intent?.`package`
 
         return if (
+            "android.media.browse.MediaBrowserService".equals(action) ||
             pkg == "com.google.android.projection.gearhead" ||   // Google AA
             pkg == "com.google.android.gms" ||                   // GMS AA
             pkg?.startsWith("com.syu") == true ||                // FYT AA

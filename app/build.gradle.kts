@@ -70,13 +70,13 @@ kotlin {
 
 dependencies {
     // --- AndroidX core UI ---
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
 
     // --- MediaSession + notifications ---
-    implementation("androidx.media:media:1.6.0")
+    implementation("androidx.media:media:1.7.0")
 
     // --- ExoPlayer (core + UI) ---
     implementation("com.google.android.exoplayer:exoplayer:2.19.1")
@@ -87,9 +87,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
     // --- Optional but recommended ---
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
-    implementation("androidx.activity:activity-ktx:1.8.2")
-    implementation("androidx.fragment:fragment-ktx:1.6.2")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.2")
+    implementation("androidx.activity:activity-ktx:1.9.0")
+    implementation("androidx.fragment:fragment-ktx:1.7.1")
 
     implementation("com.google.code.gson:gson:2.10.1")
 }
