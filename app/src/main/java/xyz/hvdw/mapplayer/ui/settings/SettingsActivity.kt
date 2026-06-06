@@ -38,6 +38,16 @@ class SettingsActivity : AppCompatActivity() {
         btnRescan = findViewById(R.id.btnRescan)
         btnOpenLog = findViewById<Button>(R.id.btnOpenLog)
 
+        // Check if an old log exists
+        val logFile = File(getExternalFilesDir(null), "_MapPlayer_Log/error.log")
+
+        if (logFile.exists()) {
+            btnOpenLog.visibility = View.VISIBLE
+            btnOpenLog.isEnabled = true
+        } else {
+            btnOpenLog.visibility = View.GONE
+        }
+
         updateStatus()
 
         btnRescan.setOnClickListener {
@@ -87,11 +97,7 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         btnOpenLog.setOnClickListener {
-            val intent = Intent(Intent.ACTION_VIEW)
-            val logFile = File(getExternalFilesDir(null), "_MapPlayer_Log/error.log")
-            intent.setDataAndType(Uri.fromFile(logFile), "text/plain")
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            startActivity(intent)
+            startActivity(Intent(this, LogViewerActivity::class.java))
         }
 
     }
