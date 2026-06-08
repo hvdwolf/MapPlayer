@@ -16,6 +16,7 @@
         android:resizeableActivity="true"
         android:label="MapPlayer"
         android:icon="@mipmap/ic_launcher"
+        android:appCategory="audio"
         android:roundIcon="@mipmap/ic_launcher"
         android:theme="@style/Theme.MapPlayer" >
 
@@ -23,6 +24,10 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+
+                <!-- Tell Android that we are a music player -->
+                <action android:name="android.intent.action.MUSIC_PLAYER" />
+                <category android:name="android.intent.category.APP_MUSIC" />
             </intent-filter>
         </activity>
 
