@@ -89,6 +89,14 @@ class MusicService : MediaBrowserServiceCompat() {
         // for Android Auto
         setSessionToken(mediaSession.sessionToken)
 
+        mediaSession.setFlags(
+            MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or
+            MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS or
+            MediaSessionCompat.FLAG_HANDLES_QUEUE_COMMANDS
+        )
+
+        player = ExoPlayer.Builder(this).build()
+
         mediaSession.setCallback(object : MediaSessionCompat.Callback() {
             override fun onPlay() {
                 player.playWhenReady = true
@@ -110,10 +118,67 @@ class MusicService : MediaBrowserServiceCompat() {
             override fun onSkipToPrevious() {
                 skipPrevious()
             }
-        })
-        mediaSession.isActive = true
 
-        player = ExoPlayer.Builder(this).build()
+
+            override fun onPlayFromMediaId(mediaId: String?, extras: Bundle?) {
+                if (mediaId == null) return
+
+                if (mediaId.startsWith("track:")) {
+                    val uri = mediaId.removePrefix("track:")
+                    val track = MusicRepository.getTrackByUri(uri)
+
+                    if (track != null) {
+                        val mediaUri = Uri.parse(uri)
+
+                        audioManager.requestAudioFocus(focusRequest)
+
+                        val art = track.albumArt ?: vectorToBitmap(R.drawable.ic_music_note_placeholder)
+
+                        val metadata = MediaMetadataCompat.Builder()
+                            .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, mediaId)
+                            .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track.title)
+                            .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, track.artist)
+                            .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, track.album)
+                            .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, track.duration)
+                            .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, art)
+                            .putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON, art)
+                            .build()
+
+                        mediaSession.setMetadata(metadata)
+
+                        //queue.clear()
+                        //queue.add(track)
+                        //shuffledQueue.clear()
+                        //currentIndex = 0
+                        //shuffle = false
+
+                        playUri(mediaUri)   // ExoPlayer startfunctie
+
+                        mediaSession.setPlaybackState(
+                            PlaybackStateCompat.Builder()
+                                .setState(
+                                    PlaybackStateCompat.STATE_PLAYING,
+                                    0L,
+                                    1f
+                                )
+                                .setActions(
+                                    PlaybackStateCompat.ACTION_PLAY or
+                                    PlaybackStateCompat.ACTION_PAUSE or
+                                    PlaybackStateCompat.ACTION_PLAY_FROM_MEDIA_ID
+                                )
+                                .build()
+                        )
+                            // Force AA to see correct metadata + state
+                            //updateMetadata(track)
+                            //updatePlaybackState()
+                            //updateNotification()
+                    }
+                }
+            }
+
+        })
+
+        mediaSession.isActive = true
 
 
         player.addListener(object : Player.Listener {
@@ -199,23 +264,19 @@ class MusicService : MediaBrowserServiceCompat() {
     ) {
         val items = mutableListOf<MediaBrowserCompat.MediaItem>()
 
-        // ---------- ROOT: list top-level folders ----------
+        // ---------- ROOT ----------
         if (parentId == "__ROOT__") {
-            val musicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC)
-            val musicRoot = Uri.fromFile(musicDir)
-            val topFolders = MusicRepository.listSubfolders(this, musicRoot)
-        
-            for (folder in topFolders) {
+            val rootFolders = MusicRepository.folders.filter { it.parentUri == null }
+
+            for (folder in rootFolders) {
                 val desc = MediaDescriptionCompat.Builder()
                     .setMediaId("folder:${folder.uri}")
                     .setTitle(folder.name)
                     .build()
 
-                items.add(
-                    MediaBrowserCompat.MediaItem(
-                        desc,
-                        MediaBrowserCompat.MediaItem.FLAG_BROWSABLE
-                    )
+                items += MediaBrowserCompat.MediaItem(
+                    desc,
+                    MediaBrowserCompat.MediaItem.FLAG_BROWSABLE
                 )
             }
 
@@ -223,26 +284,38 @@ class MusicService : MediaBrowserServiceCompat() {
             return
         }
 
-        // ---------- FOLDER: list tracks ----------
+        // ---------- FOLDER ----------
         if (parentId.startsWith("folder:")) {
-            val folderUriString = parentId.removePrefix("folder:")
-            val folderUri = Uri.parse(folderUriString)
+            val folderUri = parentId.removePrefix("folder:")
 
-            val tracks = MusicRepository.getTracksInFolder(folderUri)
+            // Subfolders
+            val subfolders = MusicRepository.folders.filter { it.parentUri == folderUri }
+
+            for (folder in subfolders) {
+                val desc = MediaDescriptionCompat.Builder()
+                    .setMediaId("folder:${folder.uri}")
+                    .setTitle(folder.name)
+                    .build()
+
+                items += MediaBrowserCompat.MediaItem(
+                    desc,
+                    MediaBrowserCompat.MediaItem.FLAG_BROWSABLE
+                )
+            }
+
+            // Tracks
+            val tracks = MusicRepository.tracks.filter { it.folderUri == folderUri }
 
             for (track in tracks) {
                 val desc = MediaDescriptionCompat.Builder()
                     .setMediaId("track:${track.uri}")
                     .setTitle(track.title)
-                    .setSubtitle(track.artist)
-                    .setMediaUri(track.uri) // already a Uri
+                    .setSubtitle(track.artist ?: "")
                     .build()
 
-                items.add(
-                    MediaBrowserCompat.MediaItem(
-                        desc,
-                        MediaBrowserCompat.MediaItem.FLAG_PLAYABLE
-                    )
+                items += MediaBrowserCompat.MediaItem(
+                    desc,
+                    MediaBrowserCompat.MediaItem.FLAG_PLAYABLE
                 )
             }
 
@@ -250,8 +323,37 @@ class MusicService : MediaBrowserServiceCompat() {
             return
         }
 
-        // ---------- Unknown parent ----------
-        result.sendResult(mutableListOf())
+        // ---------- TRACK (should not happen here) ----------
+        result.sendResult(items)
+    }
+
+    override fun onLoadItem(
+        itemId: String,
+        result: Result<MediaBrowserCompat.MediaItem>
+    ) {
+        if (itemId.startsWith("track:")) {
+            val uri = itemId.removePrefix("track:")
+            val track = MusicRepository.getTrackByUri(uri)
+
+            if (track != null) {
+                val desc = MediaDescriptionCompat.Builder()
+                    .setMediaId(itemId)
+                    .setTitle(track.title)
+                    .setSubtitle(track.artist)
+                    .setMediaUri(Uri.parse(uri))
+                    .build()
+
+                 val item = MediaBrowserCompat.MediaItem(
+                    desc,
+                    MediaBrowserCompat.MediaItem.FLAG_PLAYABLE
+                )
+
+                result.sendResult(item)
+                return
+            }
+        }
+
+        result.sendResult(null)
     }
 
 
@@ -575,6 +677,12 @@ class MusicService : MediaBrowserServiceCompat() {
         updateMetadata(track)
         updatePlaybackState()
         updateNotification()
+    }
+
+     private fun playUri(uri: Uri) {
+        player.setMediaItems(listOf(MediaItem.fromUri(uri)))
+        player.prepare()
+        player.playWhenReady = true
     }
 
 }

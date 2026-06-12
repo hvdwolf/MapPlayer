@@ -10,6 +10,7 @@ import xyz.hvdw.mapplayer.model.FolderItem
 import xyz.hvdw.mapplayer.model.Track
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
+import xyz.hvdw.mapplayer.data.LibraryScanner.LibraryFolder
 import xyz.hvdw.mapplayer.data.LibraryTrack
 
 data class SearchEntry(
@@ -24,8 +25,10 @@ object MusicRepository {
 
     private val libraryLoaded = AtomicBoolean(false)
 
-    private var folders: List<LibraryScanner.LibraryFolder> = emptyList()
-    private var tracks: List<LibraryTrack> = emptyList()
+    var folders: List<LibraryScanner.LibraryFolder> = emptyList()
+        private set
+    var tracks: List<LibraryTrack> = emptyList()
+        private set
     private val folderCache = mutableMapOf<String, List<Track>>()
 
 
@@ -63,6 +66,12 @@ object MusicRepository {
             }
             .sortedBy { it.name.lowercase() }
     }
+
+    //Helper for Android Auto onLoadChildren
+    fun listRootFolders(): List<LibraryScanner.LibraryFolder> {
+        return folders.filter { it.parentUri == null }
+    }
+
 
     // ---------- Track listing (instant from memory) ----------
     fun listTracksInFolder(
