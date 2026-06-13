@@ -8,5 +8,6 @@ data class LibraryTrack(
     val album: String?,
     val duration: Long = 0L,
     val thumbnailPath: String? = null,
-    val metadataLoaded: Boolean = false
+    val metadataLoaded: Boolean = false,
+    val path: String
 )

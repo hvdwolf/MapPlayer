@@ -95,7 +95,8 @@ object MusicRepository {
                 }
 
                 Track(
-                    uri = Uri.parse(t.uri),
+                    //uri = Uri.parse(t.uri),
+                    uri = Uri.fromFile(File(t.path)),
                     title = t.title ?: "",
                     artist = t.artist,
                     album = t.album,
@@ -166,7 +167,8 @@ object MusicRepository {
     fun getAllTracks(): List<Track> {
         return tracks.map { t ->
             Track(
-                uri = Uri.parse(t.uri),
+                //uri = Uri.parse(t.uri),
+                uri = Uri.fromFile(File(t.path)),
                 title = t.title ?: "",
                 artist = t.artist,
                 album = t.album,
@@ -207,7 +209,8 @@ object MusicRepository {
             .sortedBy { Uri.parse(it.uri).lastPathSegment?.lowercase() ?: "" }
             .map { t ->
                 Track(
-                    uri = Uri.parse(t.uri),
+                    //uri = Uri.parse(t.uri),
+                    uri = Uri.fromFile(File(t.path)),
                     title = t.title ?: "",
                     artist = t.artist,
                     album = t.album,

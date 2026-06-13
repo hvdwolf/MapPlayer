@@ -120,7 +120,7 @@ class MusicService : MediaBrowserServiceCompat() {
             }
 
 
-            override fun onPlayFromMediaId(mediaId: String?, extras: Bundle?) {
+            /* override fun onPlayFromMediaId(mediaId: String?, extras: Bundle?) {
                 if (mediaId == null) return
 
                 if (mediaId.startsWith("track:")) {
@@ -174,7 +174,20 @@ class MusicService : MediaBrowserServiceCompat() {
                             //updateNotification()
                     }
                 }
+            } */
+
+            override fun onPlayFromMediaId(mediaId: String?, extras: Bundle?) {
+                if (mediaId == null) return
+                if (!mediaId.startsWith("track:")) return
+
+                val uri = mediaId.removePrefix("track:")
+                val track = MusicRepository.getTrackByUri(uri) ?: return
+
+                audioManager.requestAudioFocus(focusRequest)
+
+                playUri(Uri.parse(uri))
             }
+
 
         })
 
@@ -255,7 +268,7 @@ class MusicService : MediaBrowserServiceCompat() {
         rootHints: Bundle?
     ): BrowserRoot {
         // Android Auto requires a non-null root
-        return BrowserRoot("__ROOT__", null)
+        return BrowserRoot("root", null)
     }
 
     override fun onLoadChildren(
@@ -265,7 +278,7 @@ class MusicService : MediaBrowserServiceCompat() {
         val items = mutableListOf<MediaBrowserCompat.MediaItem>()
 
         // ---------- ROOT ----------
-        if (parentId == "__ROOT__") {
+        if (parentId == "root") {
             val rootFolders = MusicRepository.folders.filter { it.parentUri == null }
 
             for (folder in rootFolders) {
@@ -679,10 +692,39 @@ class MusicService : MediaBrowserServiceCompat() {
         updateNotification()
     }
 
-     private fun playUri(uri: Uri) {
+     /*private fun playUri(uri: Uri) {
+        player.setMediaItems(listOf(MediaItem.fromUri(uri)))
+        player.prepare()
+        player.playWhenReady = true
+    }*/
+
+    private fun playUri(uri: Uri) {
+        // First: all tracks in same folder as this uri
+        val folderUri = MusicRepository.getFolderUriOfTrack(uri)
+        if (folderUri != null) {
+            val tracksInFolder = MusicRepository.getTracksInFolder(folderUri)
+            if (tracksInFolder.isNotEmpty()) {
+                // Build playlist
+                val mediaItems = tracksInFolder.map { track ->
+                    MediaItem.fromUri(track.uri)
+                }
+
+                // Start chosen track
+                val startIndex = tracksInFolder.indexOfFirst { it.uri == uri }
+                    .coerceAtLeast(0)
+
+                player.setMediaItems(mediaItems, startIndex, 0L)
+                player.prepare()
+                player.playWhenReady = true
+                return
+            }
+        }
+
+        // Fallback: only this uri
         player.setMediaItems(listOf(MediaItem.fromUri(uri)))
         player.prepare()
         player.playWhenReady = true
     }
+
 
 }

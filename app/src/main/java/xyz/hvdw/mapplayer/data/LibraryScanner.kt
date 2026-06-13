@@ -202,7 +202,8 @@ object LibraryScanner {
                     listener?.onProgress(currentFileRef[0], totalFiles)
 
                     try {
-                        val trackUri = f.toURI().toString()
+                        //val trackUri = f.toURI().toString()
+                        val trackUri = f.absolutePath
                         val meta = extractMetadataWithArt(context, f)
 
                         val thumbnailPath = if (meta.art != null) {
@@ -218,7 +219,8 @@ object LibraryScanner {
                             album = meta.album,
                             duration = meta.duration,
                             thumbnailPath = thumbnailPath,
-                            metadataLoaded = true
+                            metadataLoaded = true,
+                            path = f.absolutePath
                         )
 
                     } catch (e: Exception) {
