@@ -8,14 +8,14 @@
     android:padding="8dp"
     android:foreground="?attr/selectableItemBackground">
 
-    <!-- Three-dot menu from landscape mode MUST also exist in portrait mode, but now hidden -->
+    <!-- Hidden in portrait, visible in landscape -->
     <ImageView
         android:id="@+id/folderMenuFront"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:visibility="gone" />
 
-    <!-- Folder icon / cover art -->
+    <!-- Folder icon -->
     <ImageView
         android:id="@+id/folderImage"
         android:layout_width="48dp"
@@ -52,7 +52,7 @@
             android:text="@string/folder_subtitle_default" />
     </LinearLayout>
 
-    <!-- Three-dot menu repeated-->
+    <!-- Three-dot menu -->
     <ImageView
         android:id="@+id/folderMenuBack"
         android:layout_width="32dp"

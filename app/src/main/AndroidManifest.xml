@@ -48,13 +48,13 @@
 
             <intent-filter>
                 <!-- REQUIRED for MediaBrowserServiceCompat -->
-                <action android:name="android.service.media.MediaBrowserService" />
+                <!-- <action android:name="android.service.media.MediaBrowserService" /> -->
 
                 <!-- Modern Android Auto -->
                 <action android:name="android.media.browse.MediaBrowserService" />
 
                 <!-- Legacy / FYT / OEM Android Auto -->
-                <action android:name="com.google.android.gms.car.media.MediaBrowserService" />
+                <!-- <action android:name="com.google.android.gms.car.media.MediaBrowserService" /> -->
 
                 <category android:name="android.media.category.CAR_MEDIA" />
             </intent-filter>

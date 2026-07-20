@@ -85,6 +85,8 @@ class MusicService : MediaBrowserServiceCompat() {
         super.onCreate()
         createNotificationChannel()
 
+        MusicRepository.ensureLibraryLoaded(this)
+
         mediaSession = MediaSessionCompat(this, "MapPlayerSession")
         // for Android Auto
         setSessionToken(mediaSession.sessionToken)
@@ -186,6 +188,8 @@ class MusicService : MediaBrowserServiceCompat() {
                 audioManager.requestAudioFocus(focusRequest)
 
                 playUri(Uri.parse(uri))
+                updateMetadata(track)
+                updatePlaybackState()
             }
 
 
@@ -267,7 +271,18 @@ class MusicService : MediaBrowserServiceCompat() {
         clientUid: Int,
         rootHints: Bundle?
     ): BrowserRoot {
-        // Android Auto requires a non-null root
+
+        val extras = Bundle().apply {
+            putInt(
+                "android.media.browse.CONTENT_STYLE_BROWSABLE_HINT",
+                1
+            )
+            putInt(
+                "android.media.browse.CONTENT_STYLE_PLAYABLE_HINT",
+                1
+            )
+        }
+
         return BrowserRoot("root", null)
     }
 
