@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <SwitchPreferenceCompat
         android:key="pref_gallery_view"
-        android:title="Gallery view for folders"
-        android:summary="Show folders as thumbnails instead of a list"
-        android:defaultValue="false" />
+        android:title="@string/settings_gallery_view_title"
+        android:summary="@string/settings_gallery_view_summary"
+        app:layout="@layout/preference_switch_left" />
 
 </PreferenceScreen>

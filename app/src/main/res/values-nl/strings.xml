@@ -37,4 +37,7 @@
     <string name="logviewer_delete">Verwijder log</string>
     <string name="logviewer_share">Deel log</string>
 
+    <string name="settings_gallery_view_title">Galerijweergave voor mappen</string>
+    <string name="settings_gallery_view_summary">Toon mappen als miniaturen in plaats van een lijst</string>
+
 </resources>
