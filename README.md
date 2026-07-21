@@ -10,7 +10,8 @@ A folder-based only music player for Android based on the new Google [ExoPlayer]
 * Shows album art
 * Plays all Android supported formats (mp3/aac/flac, etc.)
 * Play File, Play folder, Play folder in random order
-* "More" menu (vertical 3-dots menu) for "Play folder" and "Play folder in random order", left and tight of folder texts (Against all design rules but handy in widescreen Android car units).
+* In List view: "More" menu (vertical 3-dots menu) for "Play folder" and "Play folder in random order", left and tight of folder texts (Against all design rules but handy in widescreen Android car units).
+* In Gallery view: tap folder icon to open the folder. Long-press icon to display popup menu with "Play folder" and "Play folder in random order".
 * Shuffle mode: Play folder in random order
 * Search for a song/artist/album.
 * Runs on Android 10+
@@ -32,11 +33,43 @@ If you find it useful, then use it and be happy. I will be too.
 I'm not going to implement any feature requests, unless I personally want/need them too.
 
 ### Some screenshots
-From my Samsung phone , but should work on any Android device running Android 10+
+Portrait images from my Samsung phone, landscape images from my DuDu7 Android head unit. The app should work on any Android device running Android 10+
 
-Some screenshots             |      |
-|:-------------------------:|:-------------------------:|
-| Music folder view  |  folder menu  |
-|  ![](./images/root_folder_view.jpg)  |  ![](./images/folder_menu.jpg)  |
-|  in folder view  |  library scan  |
-|  ![](./images/in_folder_view.jpg)  |  ![](./images/library_scan.jpg)  |
+<table>
+  <tr><th colspan="2">Some screenshots</th></tr>
+  <tr>
+     <td>Music folder view</td>
+     <td>folder menu</td>
+  </tr>
+  <tr>
+     <td><img src="./images/root_folder_view.jpg"></td>
+     <td><img src="./images/folder_menu.jpg"></td>
+  </tr>
+  <tr>
+     <td>In folder view</td>
+     <td>gallery view portrait</td>
+  </tr>
+  <tr>
+     <td><img src="./images/in_folder_view.jpg"></td>
+     <td><img src="./images/gallery_view_portrait.jpg"></td>
+  </tr>
+  <tr>
+     <td colspan="2">In folder view</td>
+  </tr>
+  <tr>
+     <td colspan="2"><img src="./images/gallery_view_landscape.jpg"></td>
+  </tr>
+  <tr>
+     <td colspan="2">list view landscape</td>
+  </tr>
+  <tr>
+     <td colspan="2"><img src="./images/listview_landscape.jpg"></td>
+  </tr>
+  <tr>
+     <td colspan="2">library scan and listview/gallery switch</td>
+  </tr>
+  <tr>
+     <td colspan="2"><img src="./images/library_scan_and_list_gallery_switch.jpg"></td>
+  </tr>
+
+</table>
