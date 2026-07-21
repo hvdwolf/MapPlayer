@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <SwitchPreferenceCompat
+        android:key="pref_gallery_view"
+        android:title="Gallery view for folders"
+        android:summary="Show folders as thumbnails instead of a list"
+        android:defaultValue="false" />
+
+</PreferenceScreen>

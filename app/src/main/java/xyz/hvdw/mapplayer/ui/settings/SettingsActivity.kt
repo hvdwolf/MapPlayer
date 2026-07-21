@@ -17,6 +17,10 @@ import xyz.hvdw.mapplayer.data.MusicRepository
 
 class SettingsActivity : AppCompatActivity() {
 
+    companion object {
+        const val PREF_GALLERY_VIEW = "pref_gallery_view"
+    }
+
     private lateinit var txtStatus: TextView
     private lateinit var txtStatusSubtitle: TextView
     private lateinit var txtProgress: TextView
@@ -28,6 +32,12 @@ class SettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
 
+        supportFragmentManager
+            .beginTransaction()
+            .replace(R.id.settingsContainer, SettingsFragment())
+            .commit()
+
+
         val toolbar = findViewById<MaterialToolbar>(R.id.topAppBar)
         toolbar.setNavigationOnClickListener { finish() }
 
@@ -37,6 +47,8 @@ class SettingsActivity : AppCompatActivity() {
         progressScanning = findViewById(R.id.progressScanning)
         btnRescan = findViewById(R.id.btnRescan)
         btnOpenLog = findViewById<Button>(R.id.btnOpenLog)
+
+
 
         // Check if an old log exists
         val logFile = File(getExternalFilesDir(null), "_MapPlayer_Log/error.log")

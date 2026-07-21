@@ -8,22 +8,24 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.GestureDetector
-import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ProgressBar
+import android.view.LayoutInflater
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentTransaction
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
 import xyz.hvdw.mapplayer.R
-import xyz.hvdw.mapplayer.data.LibraryScanner
 import xyz.hvdw.mapplayer.data.MusicRepository
 import xyz.hvdw.mapplayer.model.FolderItem
 import xyz.hvdw.mapplayer.model.Track
@@ -34,10 +36,12 @@ import xyz.hvdw.mapplayer.data.SearchEntry
 
 class FolderBrowserActivity : AppCompatActivity(),
     FolderAdapter.FolderClickListener,
-    SongAdapter.SongClickListener {
+    SongAdapter.SongClickListener,
+    FolderGalleryAdapter.FolderClickListener {
 
     companion object {
         const val EXTRA_FOLDER_URI = "extra_folder_uri"
+        private const val PREF_GALLERY_VIEW = "pref_gallery_view"
     }
 
     private lateinit var recyclerView: RecyclerView
@@ -62,44 +66,25 @@ class FolderBrowserActivity : AppCompatActivity(),
 
         val toolbar = findViewById<MaterialToolbar>(R.id.topAppBar)
         setSupportActionBar(toolbar)
-        /* toolbar.setOnMenuItemClickListener { item ->
-            when (item.itemId) {
-                R.id.action_settings -> {
-                    startActivity(Intent(this, SettingsActivity::class.java))
-                    true
-                }
-                R.id.action_search -> {
-                    // IMPORTANT: allow SearchView to expand
-                    false
-                }
-                else -> false
-            }
-        } */
-
 
         recyclerView = findViewById(R.id.recyclerView)
         recyclerView.setSaveEnabled(false)
-        recyclerView.layoutManager = LinearLayoutManager(this)
 
         if (!PermissionManager.hasAllPermissions(this)) {
             PermissionManager.requestPermissions(this)
             return
         }
 
-
         // Listen for library updates
         LocalBroadcastManager.getInstance(this).registerReceiver(
             libraryUpdatedReceiver,
             IntentFilter("ACTION_LIBRARY_UPDATED")
         )
-
     }
 
     override fun onResume() {
         super.onResume()
 
-        // If we were in search mode before going to PlayerActivity,
-        // restore the normal folder/song view.
         if (inSearchMode) {
             inSearchMode = false
 
@@ -114,7 +99,6 @@ class FolderBrowserActivity : AppCompatActivity(),
             return
         }
 
-        // No double initialization
         if (initialized) return
 
         if (!PermissionManager.hasAllPermissions(this)) {
@@ -122,7 +106,7 @@ class FolderBrowserActivity : AppCompatActivity(),
             return
         }
 
-        initializeBrowser()   // <-- pas nu mag je scannen / laden
+        initializeBrowser()
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -135,8 +119,6 @@ class FolderBrowserActivity : AppCompatActivity(),
         }
     }
 
-
-
     private fun setupGestureDetector() {
         gestureDetector = GestureDetector(
             this,
@@ -144,6 +126,23 @@ class FolderBrowserActivity : AppCompatActivity(),
                 override fun onDown(e: MotionEvent): Boolean = true
             }
         )
+
+        findViewById<View>(R.id.rootFolderBrowser).setOnTouchListener { _, event ->
+            event?.let { gestureDetector.onTouchEvent(it) }
+            false
+        }
+    }
+
+    private fun isGalleryMode(): Boolean {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        return prefs.getBoolean(PREF_GALLERY_VIEW, false)
+    }
+
+    private fun autoSpanCount(): Int {
+        val displayMetrics = resources.displayMetrics
+        val screenWidthDp = displayMetrics.widthPixels / displayMetrics.density
+        // Roughly 120dp per tile → adjust as you like
+        return (screenWidthDp / 120f).toInt().coerceAtLeast(2)
     }
 
     private fun loadContent(folderUri: Uri?) {
@@ -157,7 +156,13 @@ class FolderBrowserActivity : AppCompatActivity(),
         val subfolders = MusicRepository.listSubfolders(this, folderUri)
 
         if (subfolders.isNotEmpty()) {
-            recyclerView.adapter = FolderAdapter(subfolders, this)
+            if (isGalleryMode()) {
+                recyclerView.layoutManager = GridLayoutManager(this, autoSpanCount())
+                recyclerView.adapter = FolderGalleryAdapter(subfolders, this)
+            } else {
+                recyclerView.layoutManager = LinearLayoutManager(this)
+                recyclerView.adapter = FolderAdapter(subfolders, this)
+            }
             return
         }
 
@@ -167,22 +172,24 @@ class FolderBrowserActivity : AppCompatActivity(),
                 folderUri
             ) { updatedTracks ->
                 runOnUiThread {
+                    recyclerView.layoutManager = LinearLayoutManager(this)
                     val adapter = SongAdapter(updatedTracks, this)
                     adapter.setShuffle(false)
                     recyclerView.adapter = adapter
                 }
             }
-
             return
         }
 
+        recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = FolderAdapter(emptyList(), this)
     }
 
-    // Reload current folder after library update
     private fun reloadContent() {
         loadContent(currentFolderUri)
     }
+
+    // ---------- Folder clicks ----------
 
     override fun onFolderClick(folder: FolderItem) {
         currentFolderUri = folder.uri
@@ -190,7 +197,7 @@ class FolderBrowserActivity : AppCompatActivity(),
     }
 
     override fun onFolderLongClick(view: View, folder: FolderItem) {
-        // Optional
+        showFolderPopupMenu(view, folder)
     }
 
     override fun onFolderPlay(folder: FolderItem, shuffle: Boolean) {
@@ -200,6 +207,47 @@ class FolderBrowserActivity : AppCompatActivity(),
         intent.putExtra(PlayerActivity.EXTRA_SHUFFLE, shuffle)
         startActivity(intent)
     }
+
+    // Gallery adapter callbacks
+    /*override fun onPlay(folder: FolderItem) {
+        onFolderPlay(folder, shuffle = false)
+    }
+
+    override fun onShuffle(folder: FolderItem) {
+        onFolderPlay(folder, shuffle = true)
+    }*/
+
+    override fun onOpen(folder: FolderItem) {
+        onFolderClick(folder)
+    }
+
+    override fun onLongPress(view: View, folder: FolderItem) {
+        showFolderPopupMenu(view, folder)
+    }
+
+    private fun showFolderPopupMenu(anchor: View, folder: FolderItem) {
+        val popup = android.widget.PopupMenu(this, anchor)
+        popup.menuInflater.inflate(R.menu.menu_folder, popup.menu)
+
+        popup.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                R.id.action_play -> {
+                    onFolderPlay(folder, shuffle = false)
+                    true
+                }
+                R.id.action_play_random -> {
+                    onFolderPlay(folder, shuffle = true)
+                    true
+                }
+                else -> false
+            }
+        }
+
+        popup.show()
+    }
+
+
+    // ---------- Song clicks ----------
 
     override fun onSongClick(track: Track, position: Int, shuffle: Boolean) {
         val intent = Intent(this, PlayerActivity::class.java)
@@ -222,7 +270,6 @@ class FolderBrowserActivity : AppCompatActivity(),
 
     override fun onDestroy() {
         super.onDestroy()
-        // Clean up receiver
         LocalBroadcastManager.getInstance(this).unregisterReceiver(libraryUpdatedReceiver)
     }
 
@@ -238,32 +285,24 @@ class FolderBrowserActivity : AppCompatActivity(),
         }
     }
 
-
     private fun initializeBrowser() {
-         if (initialized) return
-         initialized = true
+        if (initialized) return
+        initialized = true
 
-        // If no folder was passed, default to the Music directory
         currentFolderUri = intent.getStringExtra(EXTRA_FOLDER_URI)?.let { Uri.parse(it) }
             ?: run {
                 val musicDir = android.os.Environment.getExternalStoragePublicDirectory(
                     android.os.Environment.DIRECTORY_MUSIC
                 )
-                musicDir.toURI().toString().let { Uri.parse(it) }
+                Uri.parse(musicDir.toURI().toString())
             }
 
         setupGestureDetector()
-        findViewById<View>(R.id.rootFolderBrowser).setOnTouchListener { _, event ->
-            event?.let { gestureDetector.onTouchEvent(it) }
-            false
-        }
 
         MusicRepository.ensureLibraryLoaded(this)
 
         if (!MusicRepository.isReady()) {
             startActivity(Intent(this, SettingsActivity::class.java))
-            true
-            // Listen for library updates
             LocalBroadcastManager.getInstance(this).registerReceiver(
                 libraryUpdatedReceiver,
                 IntentFilter("ACTION_LIBRARY_UPDATED")
@@ -273,8 +312,7 @@ class FolderBrowserActivity : AppCompatActivity(),
         }
     }
 
-
-    // ---------- Search options ----------
+    // ---------- Search ----------
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
@@ -286,8 +324,6 @@ class FolderBrowserActivity : AppCompatActivity(),
 
         searchView?.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
-                // Ignore submit to prevent double search
-                //if (!query.isNullOrEmpty()) performSearch(query)
                 return true
             }
 
@@ -295,7 +331,6 @@ class FolderBrowserActivity : AppCompatActivity(),
                 val q = newText?.trim().orEmpty()
 
                 if (q.isEmpty()) {
-                    // Query cleared → leave search mode and show folder again
                     inSearchMode = false
                     loadContent(currentFolderUri)
                     return true
@@ -305,17 +340,16 @@ class FolderBrowserActivity : AppCompatActivity(),
                 performSearch(q)
                 return true
             }
-
         })
 
         searchView?.setOnCloseListener {
-            // User pressed back or closed search manually
             inSearchMode = false
             loadContent(currentFolderUri)
             false
         }
         return true
     }
+
 
     private fun performSearch(query: String) {
         val q = query.lowercase()
@@ -328,6 +362,7 @@ class FolderBrowserActivity : AppCompatActivity(),
 
         inSearchMode = true
 
+        recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = SearchResultsAdapter(results) { entry ->
             openPlayerFromSearchEntry(entry)
         }
@@ -342,7 +377,7 @@ class FolderBrowserActivity : AppCompatActivity(),
             val title: TextView = view.findViewById(R.id.txtTitle)
             val artist: TextView = view.findViewById(R.id.txtArtist)
 
-             init {
+            init {
                 view.setOnClickListener {
                     onClick(tracks[adapterPosition])
                 }
@@ -364,43 +399,11 @@ class FolderBrowserActivity : AppCompatActivity(),
         override fun getItemCount() = tracks.size
     }
 
-    private fun openPlayer(track: Track, results: List<Track>) {
-        val index = results.indexOfFirst { it.uri == track.uri }
-        if (index == -1) return
-
-        val intent = Intent(this, PlayerActivity::class.java)
-
-        intent.putExtra(PlayerActivity.EXTRA_START_INDEX, index)
-        intent.putExtra(PlayerActivity.EXTRA_SHUFFLE, false)
-        startActivity(intent)
-    }
-
-    private fun openPlayerFromSearch(track: Track) {
-        val folderUri = MusicRepository.getFolderUriOfTrack(track.uri)
-            ?: currentFolderUri   // fallback to the folder you were in
-            ?: return
-
-
-        val index = MusicRepository.getIndexOfTrackInFolder(folderUri, track.uri)
-        if (index == -1) return
-
-        /*searchView?.setQuery("", false)
-        searchView?.clearFocus()
-        searchView?.onActionViewCollapsed() */
-
-        val intent = Intent(this, PlayerActivity::class.java)
-        intent.putExtra(PlayerActivity.EXTRA_FOLDER_URI, folderUri.toString())
-        intent.putExtra(PlayerActivity.EXTRA_START_INDEX, index)
-        intent.putExtra(PlayerActivity.EXTRA_SHUFFLE, false)
-        startActivity(intent)
-    }
-
     private fun openPlayerFromSearchEntry(entry: SearchEntry) {
         val folderUri = entry.folderUri?.let { Uri.parse(it) }
             ?: currentFolderUri
             ?: return
 
-        // Try cached folder list first
         val cached = MusicRepository.getCachedTracksInFolder(folderUri)
         if (cached != null) {
             val index = cached.indexOfFirst { it.uri.toString() == entry.uri }
@@ -410,7 +413,6 @@ class FolderBrowserActivity : AppCompatActivity(),
             }
         }
 
-        // Fallback: build and cache the folder list once via listTracksInFolder
         MusicRepository.listTracksInFolder(this, folderUri) { tracks ->
             if (tracks.isEmpty()) return@listTracksInFolder
 
@@ -430,5 +432,4 @@ class FolderBrowserActivity : AppCompatActivity(),
         intent.putExtra(PlayerActivity.EXTRA_SHUFFLE, false)
         startActivity(intent)
     }
-
 }

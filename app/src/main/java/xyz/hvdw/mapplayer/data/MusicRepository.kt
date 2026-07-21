@@ -58,11 +58,27 @@ object MusicRepository {
 
         return children
             .map { f ->
+                //FolderItem(
+                //    uri = Uri.parse(f.uri),
+                //    name = f.name,
+                //    coverArtUri = f.coverArtPath?.let { Uri.fromFile(File(it)) }
+                //)
+                val bmp: Bitmap? = f.coverArtPath?.let { path ->
+                    try {
+                        BitmapFactory.decodeFile(path)
+                    } catch (e: Exception) {
+                        Log.w("MusicRepository", "Failed to decode folder cover art: $path", e)
+                        null
+                    }
+                }
+
                 FolderItem(
                     uri = Uri.parse(f.uri),
                     name = f.name,
-                    coverArtUri = f.coverArtPath?.let { Uri.fromFile(File(it)) }
+                    coverArtUri = f.coverArtPath?.let { Uri.fromFile(File(it)) },
+                    thumbnail = bmp
                 )
+
             }
             .sortedBy { it.name.lowercase() }
     }
