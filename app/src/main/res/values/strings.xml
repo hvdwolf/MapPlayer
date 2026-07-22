@@ -38,5 +38,7 @@
 
     <string name="settings_gallery_view_title">Gallery view for folders</string>
     <string name="settings_gallery_view_summary">Show folders as thumbnails instead of a list</string>
+    <string name="settings_thumbnail_size">Thumbnail size</string>
+    <string name="settings_select_resolution">Choose the resolution for folder thumbnails</string>
 
 </resources>

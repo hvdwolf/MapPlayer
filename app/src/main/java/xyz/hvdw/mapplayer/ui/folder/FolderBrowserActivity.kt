@@ -134,7 +134,7 @@ class FolderBrowserActivity : AppCompatActivity(),
     }
 
     private fun isGalleryMode(): Boolean {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        val prefs = getSharedPreferences("mapplayer_settings", Context.MODE_PRIVATE)
         return prefs.getBoolean(PREF_GALLERY_VIEW, false)
     }
 
@@ -157,7 +157,7 @@ class FolderBrowserActivity : AppCompatActivity(),
 
         if (subfolders.isNotEmpty()) {
             if (isGalleryMode()) {
-                recyclerView.layoutManager = GridLayoutManager(this, autoSpanCount())
+                recyclerView.layoutManager = GridLayoutManager(this, calculateSpanCount())
                 recyclerView.adapter = FolderGalleryAdapter(subfolders, this)
             } else {
                 recyclerView.layoutManager = LinearLayoutManager(this)
@@ -432,4 +432,20 @@ class FolderBrowserActivity : AppCompatActivity(),
         intent.putExtra(PlayerActivity.EXTRA_SHUFFLE, false)
         startActivity(intent)
     }
+
+    private fun calculateSpanCount(): Int {
+        val prefs = getSharedPreferences("mapplayer_settings", Context.MODE_PRIVATE)
+        val thumbSize = prefs.getInt("pref_thumbnail_size", 256)
+
+        val screenWidth = resources.displayMetrics.widthPixels
+        val density = resources.displayMetrics.density
+
+        val thumbDp = thumbSize / density
+
+        // Add margins/padding (CardView + item spacing)
+        val totalThumbWidth = thumbDp + 24   // adjust if needed
+
+        return maxOf(1, (screenWidth / density / totalThumbWidth).toInt())
+    }
+
 }

@@ -26,8 +26,10 @@
             android:gravity="start" />
     </LinearLayout>
 
-    <Switch
-        android:id="@+id/switchWidget"
+    <!-- MUST be empty: Android inserts the real switch here -->
+    <FrameLayout
+        android:id="@android:id/widget_frame"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
+
 </LinearLayout>

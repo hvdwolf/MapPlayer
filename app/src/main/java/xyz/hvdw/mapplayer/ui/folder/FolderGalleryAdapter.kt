@@ -36,8 +36,6 @@ class FolderGalleryAdapter(
 
         private val thumb: ImageView = itemView.findViewById(R.id.folderThumb)
         private val name: TextView = itemView.findViewById(R.id.folderName)
-        //private val btnPlay: ImageButton = itemView.findViewById(R.id.btnPlay)
-        //private val btnShuffle: ImageButton = itemView.findViewById(R.id.btnShuffle)
 
         fun bind(folder: FolderItem, listener: FolderClickListener) {
             name.text = folder.name

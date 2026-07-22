@@ -147,7 +147,10 @@ object LibraryScanner {
                     val firstTrack = tracksInThisFolder.first()
                     val meta = extractMetadataWithArt(context, firstTrack)
                     if (meta.art != null) {
-                        val thumb = Bitmap.createScaledBitmap(meta.art, 256, 256, true)
+                        val prefs = context.getSharedPreferences("mapplayer_settings", Context.MODE_PRIVATE)
+                        val size = prefs.getInt("pref_thumbnail_size", 256)
+                        val thumb = Bitmap.createScaledBitmap(meta.art, size, size, true)
+
                         val outFile = File(context.cacheDir, "thumb_${thumb.hashCode()}.jpg")
                         FileOutputStream(outFile).use { os ->
                             thumb.compress(Bitmap.CompressFormat.JPEG, 85, os)

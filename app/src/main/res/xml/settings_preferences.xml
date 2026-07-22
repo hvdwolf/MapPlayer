@@ -9,4 +9,13 @@
         android:summary="@string/settings_gallery_view_summary"
         app:layout="@layout/preference_switch_left" />
 
+    <ListPreference
+        android:key="pref_thumbnail_size"
+        android:title="@string/settings_thumbnail_size"
+        android:summary="@string/settings_select_resolution"
+        android:entries="@array/thumb_size_labels"
+        android:entryValues="@array/thumb_size_values"
+        android:defaultValue="256"
+        app:useSimpleSummaryProvider="true" />
+
 </PreferenceScreen>

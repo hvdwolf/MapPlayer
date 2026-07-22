@@ -39,5 +39,7 @@
 
     <string name="settings_gallery_view_title">Galerijweergave voor mappen</string>
     <string name="settings_gallery_view_summary">Toon mappen als miniaturen in plaats van een lijst</string>
+    <string name="settings_thumbnail_size">Grootte miniatuurafbeelding</string>
+    <string name="settings_select_resolution">Kies de resolutie van de miniatuurafbeelding</string>
 
 </resources>

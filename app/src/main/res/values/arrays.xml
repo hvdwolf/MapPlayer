@@ -1,0 +1,13 @@
+<resources>
+    <string-array name="thumb_size_labels">
+        <item>256 px</item>
+        <item>384 px</item>
+        <item>512 px</item>
+    </string-array>
+
+    <string-array name="thumb_size_values">
+        <item>256</item>
+        <item>384</item>
+        <item>512</item>
+    </string-array>
+</resources>

@@ -15,7 +15,7 @@ android {
         minSdk = 29  // Android 10
         targetSdk = 33
         versionCode = 5
-        versionName = "1.1"
+        versionName = "1.1.1"
 
         // Only include the ABIs you want in the final APK
         ndk {
