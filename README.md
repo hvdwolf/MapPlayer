@@ -12,7 +12,7 @@ A folder-based only music player for Android based on the new Google [ExoPlayer]
 * Play File, Play folder, Play folder in random order
 * In List view: "More" menu (vertical 3-dots menu) for "Play folder" and "Play folder in random order", in landscape mode it has the "More" menu left and right of folder texts (Against all design rules but handy in widescreen Android car units).
 * In Gallery view: tap folder icon to open the folder. Long-press icon to display popup menu with "Play folder" and "Play folder in random order".
-* Settings for Gallery view: Select thumbanil size 256px, 384px or 512px (screenshot below shows 256px)
+* Settings for Gallery view: Select thumbnail size 256px, 384px or 512px (screenshot below shows 256px)
 * Shuffle mode: Play folder in random order
 * Search for a song/artist/album.
 * Runs on Android 10+
