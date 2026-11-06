@@ -199,11 +199,11 @@ object MusicRepository {
     fun getAllTracksForSearch(): List<SearchEntry> {
         return tracks.map { t ->
             SearchEntry(
-                uri = t.uri,
-                title = t.title ?: "",
-                artist = t.artist,
-                album = t.album,
-                folderUri = t.folderUri
+                uri = Uri.fromFile(File(t.path)).toString(),
+                        title = t.title ?: "",
+                        artist = t.artist,
+                        album = t.album,
+                        folderUri = t.folderUri
             )
         }
     }

@@ -205,6 +205,7 @@ class FolderBrowserActivity : AppCompatActivity(),
         intent.putExtra(PlayerActivity.EXTRA_FOLDER_URI, folder.uri.toString())
         intent.putExtra(PlayerActivity.EXTRA_START_INDEX, 0)
         intent.putExtra(PlayerActivity.EXTRA_SHUFFLE, shuffle)
+        intent.putExtra(PlayerActivity.EXTRA_START_PLAYBACK, true)
         startActivity(intent)
     }
 
@@ -254,6 +255,7 @@ class FolderBrowserActivity : AppCompatActivity(),
         intent.putExtra(PlayerActivity.EXTRA_FOLDER_URI, currentFolderUri.toString())
         intent.putExtra(PlayerActivity.EXTRA_START_INDEX, position)
         intent.putExtra(PlayerActivity.EXTRA_SHUFFLE, shuffle)
+        intent.putExtra(PlayerActivity.EXTRA_START_PLAYBACK, true)
         startActivity(intent)
     }
 
@@ -430,6 +432,7 @@ class FolderBrowserActivity : AppCompatActivity(),
         intent.putExtra(PlayerActivity.EXTRA_FOLDER_URI, folderUri.toString())
         intent.putExtra(PlayerActivity.EXTRA_START_INDEX, index)
         intent.putExtra(PlayerActivity.EXTRA_SHUFFLE, false)
+        intent.putExtra(PlayerActivity.EXTRA_START_PLAYBACK, true)
         startActivity(intent)
     }
 

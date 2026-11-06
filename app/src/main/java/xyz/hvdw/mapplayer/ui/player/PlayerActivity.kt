@@ -28,6 +28,7 @@ class PlayerActivity : AppCompatActivity() {
         const val EXTRA_FOLDER_URI = "extra_folder_uri"
         const val EXTRA_SHUFFLE = "extra_shuffle"
         const val EXTRA_START_INDEX = "extra_start_index"
+        const val EXTRA_START_PLAYBACK = "extra_start_playback"
     }
 
     private var service: MusicService? = null
@@ -62,14 +63,16 @@ class PlayerActivity : AppCompatActivity() {
             service?.playbackListener = playbackListener
             bound = true
 
-            // If service is already playing, DO NOT restart playback
-            if (service?.getCurrentTrack() != null) {
+            val forcePlayback = intent.getBooleanExtra(
+                EXTRA_START_PLAYBACK, false
+            )
+
+            if (service?.getCurrentTrack() != null && !forcePlayback) {
                 updateUi()
                 handler.post(updateRunnable)
                 return
             }
 
-            // Only start playback if nothing is playing yet
             startPlaybackIfNeeded()
 
             updateUi()
@@ -165,7 +168,9 @@ class PlayerActivity : AppCompatActivity() {
         val svc = service ?: return
 
         // If service is already playing something, DO NOT restart playback
-        if (svc.getCurrentTrack() != null) {
+        if (svc.getCurrentTrack() != null &&
+            !intent.getBooleanExtra(EXTRA_START_PLAYBACK, false)
+        ) {
             updateUi()
             return
         }
