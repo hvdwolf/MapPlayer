@@ -9,6 +9,21 @@
         android:summary="@string/settings_gallery_view_summary"
         app:layout="@layout/preference_switch_left" />
 
+    <Preference
+        android:selectable="false"
+        app:layout="@layout/preference_divider" />
+
+    <SwitchPreferenceCompat
+        android:key="pref_use_playlists"
+        android:title="@string/settings_use_playlists"
+        android:summary="@string/settings_use_playlists_summary"
+        android:defaultValue="false"
+        app:layout="@layout/preference_switch_left" />
+
+    <Preference
+        android:selectable="false"
+        app:layout="@layout/preference_divider" />
+
     <ListPreference
         android:key="pref_thumbnail_size"
         android:title="@string/settings_thumbnail_size"

@@ -39,6 +39,8 @@
 
     <string name="settings_gallery_view_title">Galerijweergave voor mappen</string>
     <string name="settings_gallery_view_summary">Toon mappen als miniaturen in plaats van een lijst</string>
+    <string name="settings_use_playlists">Afspeellijsten gebruiken in plaats van mappen</string>
+    <string name="settings_use_playlists_summary">Toon geïndexeerde M3U/M3U8-afspeellijsten. Scan de bibliotheek opnieuw nadat afspeellijsten zijn gewijzigd.</string>
     <string name="settings_thumbnail_size">Grootte miniatuurafbeelding</string>
     <string name="settings_select_resolution">Kies de resolutie van de miniatuurafbeelding</string>
 

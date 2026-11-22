@@ -21,6 +21,12 @@ class SettingsFragment : PreferenceFragmentCompat() {
             true
         }
 
+        val playlistsPref = findPreference<SwitchPreferenceCompat>("pref_use_playlists")
+        playlistsPref?.setOnPreferenceChangeListener { _, newValue ->
+            prefs.edit().putBoolean("pref_use_playlists", newValue as Boolean).commit()
+            true
+        }
+
         val thumbSizePref = findPreference<ListPreference>("pref_thumbnail_size")
         thumbSizePref?.setOnPreferenceChangeListener { _, newValue ->
             prefs.edit().putInt("pref_thumbnail_size", (newValue as String).toInt()).commit()
