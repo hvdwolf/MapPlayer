@@ -18,7 +18,8 @@ data class SearchEntry(
     val title: String,
     val artist: String?,
     val album: String?,
-    val folderUri: String?
+    val folderUri: String?,
+    val playlistUri: String? = null
 )
 
 object MusicRepository {
@@ -30,12 +31,15 @@ object MusicRepository {
     var tracks: List<LibraryTrack> = emptyList()
         private set
     private val folderCache = mutableMapOf<String, List<Track>>()
+    private var playlists: List<LibraryScanner.LibraryPlaylist> = emptyList()
 
 
     fun loadLibraryFromJson(context: Context) {
         val db = LibraryScanner.loadLibrary(context) ?: return
         folders = db.folders
         tracks = db.tracks
+        playlists = db.playlists.orEmpty()
+        folderCache.clear()
         libraryLoaded.set(true)
     }
 
@@ -88,6 +92,28 @@ object MusicRepository {
         return folders.filter { it.parentUri == null }
     }
 
+    fun listPlaylists(context: Context): List<FolderItem> {
+        ensureLibraryLoaded(context)
+        return playlists
+            .sortedBy { it.name.lowercase() }
+            .map { playlist ->
+                val thumbnail = playlist.trackUris.firstNotNullOfOrNull { trackUri ->
+                    tracks.firstOrNull { it.uri == trackUri }?.thumbnailPath
+                }?.let { BitmapFactory.decodeFile(it) }
+                FolderItem(
+                    uri = Uri.parse(playlist.uri),
+                    name = playlist.name,
+                    coverArtUri = null,
+                    thumbnail = thumbnail
+                )
+            }
+    }
+
+    fun isPlaylistUri(uri: Uri?): Boolean {
+        val key = uri?.toString() ?: return false
+        return playlists.any { it.uri == key }
+    }
+
 
     // ---------- Track listing (instant from memory) ----------
     fun listTracksInFolder(
@@ -98,6 +124,14 @@ object MusicRepository {
         ensureLibraryLoaded(context)
 
         val key = folderUri.toString()
+        val playlist = playlists.firstOrNull { it.uri == key }
+        if (playlist != null) {
+            return listTracksInPlaylist(playlist)
+                .also {
+                    folderCache[key] = it
+                    callback(it)
+                }
+        }
 
         val list = tracks
             .filter { t: LibraryTrack -> t.folderUri == key }
@@ -128,6 +162,22 @@ object MusicRepository {
         return list
     }
 
+    private fun listTracksInPlaylist(playlist: LibraryScanner.LibraryPlaylist): List<Track> {
+        val tracksByUri = tracks.associateBy { it.uri }
+        return playlist.trackUris.mapNotNull { trackUri ->
+            tracksByUri[trackUri]?.let { track ->
+                Track(
+                    uri = Uri.fromFile(File(track.path)),
+                    title = track.title ?: "",
+                    artist = track.artist,
+                    album = track.album,
+                    duration = track.duration,
+                    albumArt = track.thumbnailPath?.let(BitmapFactory::decodeFile)
+                )
+            }
+        }
+    }
+
     fun getCachedTracksInFolder(folderUri: Uri): List<Track>? {
         return folderCache[folderUri.toString()]
     }
@@ -136,6 +186,7 @@ object MusicRepository {
     fun getTrackCount(context: Context, folderUri: Uri): Int {
         ensureLibraryLoaded(context)
         val key = folderUri.toString()
+        playlists.firstOrNull { it.uri == key }?.let { return it.trackUris.size }
         return tracks.count { t: LibraryTrack -> t.folderUri == key }
     }
 
@@ -144,6 +195,12 @@ object MusicRepository {
     fun getFolderThumbnail(context: Context, folderUri: Uri): Bitmap? {
         ensureLibraryLoaded(context)
         val key = folderUri.toString()
+        playlists.firstOrNull { it.uri == key }?.let { playlist ->
+            val thumbnailPath = playlist.trackUris.asSequence()
+                .mapNotNull { uri -> tracks.firstOrNull { it.uri == uri }?.thumbnailPath }
+                .firstOrNull()
+            return thumbnailPath?.let { BitmapFactory.decodeFile(it) }
+        }
         val folder = folders.firstOrNull { it.uri == key } ?: return null
         val path = folder.coverArtPath ?: return null
 
@@ -205,6 +262,25 @@ object MusicRepository {
                         album = t.album,
                         folderUri = t.folderUri
             )
+        }
+    }
+
+    fun getAllPlaylistTracksForSearch(): List<SearchEntry> {
+        val tracksByUri = tracks.associateBy { it.uri }
+        val seenTrackUris = mutableSetOf<String>()
+        return playlists.flatMap { playlist ->
+            playlist.trackUris.mapNotNull { trackUri ->
+                val track = tracksByUri[trackUri] ?: return@mapNotNull null
+                if (!seenTrackUris.add(trackUri)) return@mapNotNull null
+                SearchEntry(
+                    uri = Uri.fromFile(File(track.path)).toString(),
+                    title = track.title ?: "",
+                    artist = track.artist,
+                    album = track.album,
+                    folderUri = track.folderUri,
+                    playlistUri = playlist.uri
+                )
+            }
         }
     }
 

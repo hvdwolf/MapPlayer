@@ -49,6 +49,7 @@ class FolderBrowserActivity : AppCompatActivity(),
     private var initialized = false
     private var searchView: SearchView? = null
     private var inSearchMode: Boolean = false
+    private var usePlaylists: Boolean = false
 
     private lateinit var gestureDetector: GestureDetector
 
@@ -84,6 +85,17 @@ class FolderBrowserActivity : AppCompatActivity(),
 
     override fun onResume() {
         super.onResume()
+
+        if (initialized) {
+            val newUsePlaylists = isPlaylistModeEnabled()
+            if (newUsePlaylists != usePlaylists) {
+                usePlaylists = newUsePlaylists
+                currentFolderUri = musicRootUri()
+                inSearchMode = false
+                loadContent(currentFolderUri)
+                return
+            }
+        }
 
         if (inSearchMode) {
             inSearchMode = false
@@ -150,6 +162,29 @@ class FolderBrowserActivity : AppCompatActivity(),
 
         if (!MusicRepository.isReady()) {
             recyclerView.adapter = null
+            return
+        }
+
+        if (usePlaylists) {
+            if (folderUri != null && MusicRepository.isPlaylistUri(folderUri)) {
+                MusicRepository.listTracksInFolder(this, folderUri) { updatedTracks ->
+                    runOnUiThread {
+                        recyclerView.layoutManager = LinearLayoutManager(this)
+                        val adapter = SongAdapter(updatedTracks, this)
+                        adapter.setShuffle(false)
+                        recyclerView.adapter = adapter
+                    }
+                }
+            } else {
+                val playlists = MusicRepository.listPlaylists(this)
+                if (isGalleryMode()) {
+                    recyclerView.layoutManager = GridLayoutManager(this, calculateSpanCount())
+                    recyclerView.adapter = FolderGalleryAdapter(playlists, this)
+                } else {
+                    recyclerView.layoutManager = LinearLayoutManager(this)
+                    recyclerView.adapter = FolderAdapter(playlists, this)
+                }
+            }
             return
         }
 
@@ -260,6 +295,12 @@ class FolderBrowserActivity : AppCompatActivity(),
     }
 
     override fun onBackPressed() {
+        if (usePlaylists && MusicRepository.isPlaylistUri(currentFolderUri)) {
+            currentFolderUri = musicRootUri()
+            loadContent(currentFolderUri)
+            return
+        }
+
         val parent = currentFolderUri?.let { MusicRepository.getParentFolderUri(it) }
 
         if (parent != null) {
@@ -291,13 +332,9 @@ class FolderBrowserActivity : AppCompatActivity(),
         if (initialized) return
         initialized = true
 
+        usePlaylists = isPlaylistModeEnabled()
         currentFolderUri = intent.getStringExtra(EXTRA_FOLDER_URI)?.let { Uri.parse(it) }
-            ?: run {
-                val musicDir = android.os.Environment.getExternalStoragePublicDirectory(
-                    android.os.Environment.DIRECTORY_MUSIC
-                )
-                Uri.parse(musicDir.toURI().toString())
-            }
+            ?: musicRootUri()
 
         setupGestureDetector()
 
@@ -356,7 +393,13 @@ class FolderBrowserActivity : AppCompatActivity(),
     private fun performSearch(query: String) {
         val q = query.lowercase()
 
-        val results = MusicRepository.getAllTracksForSearch().filter { t ->
+        val searchableTracks = if (usePlaylists) {
+            MusicRepository.getAllPlaylistTracksForSearch()
+        } else {
+            MusicRepository.getAllTracksForSearch()
+        }
+
+        val results = searchableTracks.filter { t ->
             t.title.lowercase().contains(q) ||
             (t.artist ?: "").lowercase().contains(q) ||
             (t.album ?: "").lowercase().contains(q)
@@ -402,7 +445,7 @@ class FolderBrowserActivity : AppCompatActivity(),
     }
 
     private fun openPlayerFromSearchEntry(entry: SearchEntry) {
-        val folderUri = entry.folderUri?.let { Uri.parse(it) }
+        val folderUri = (entry.playlistUri ?: entry.folderUri)?.let { Uri.parse(it) }
             ?: currentFolderUri
             ?: return
 
@@ -449,6 +492,17 @@ class FolderBrowserActivity : AppCompatActivity(),
         val totalThumbWidth = thumbDp + 24   // adjust if needed
 
         return maxOf(1, (screenWidth / density / totalThumbWidth).toInt())
+    }
+
+    private fun isPlaylistModeEnabled(): Boolean =
+        getSharedPreferences("mapplayer_settings", Context.MODE_PRIVATE)
+            .getBoolean("pref_use_playlists", false)
+
+    private fun musicRootUri(): Uri {
+        val musicDir = android.os.Environment.getExternalStoragePublicDirectory(
+            android.os.Environment.DIRECTORY_MUSIC
+        )
+        return Uri.parse(musicDir.toURI().toString())
     }
 
 }

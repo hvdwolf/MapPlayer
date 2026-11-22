@@ -28,7 +28,14 @@ object LibraryScanner {
 
     data class LibraryDb(
         val folders: List<LibraryFolder>,
-        val tracks: List<LibraryTrack>
+        val tracks: List<LibraryTrack>,
+        val playlists: List<LibraryPlaylist>? = emptyList()
+    )
+
+    data class LibraryPlaylist(
+        val uri: String,
+        val name: String,
+        val trackUris: List<String>
     )
 
     data class LibraryFolder(
@@ -56,6 +63,7 @@ object LibraryScanner {
 
                 val folders = mutableListOf<LibraryFolder>()
                 val tracks = mutableListOf<LibraryTrack>()
+                val playlistFiles = mutableListOf<File>()
 
                 val totalFiles = countAudioFiles(musicDir)
                 val currentFileRef = intArrayOf(0)
@@ -67,13 +75,18 @@ object LibraryScanner {
                         parentUri = null,
                         folders = folders,
                         tracks = tracks,
+                        playlistFiles = playlistFiles,
                         listener = listener,
                         totalFiles = totalFiles,
                         currentFileRef = currentFileRef
                     )
                 }
 
-                val db = LibraryDb(folders = folders, tracks = tracks)
+                val db = LibraryDb(
+                    folders = folders,
+                    tracks = tracks,
+                    playlists = indexPlaylists(playlistFiles, tracks)
+                )
                 val json = Gson().toJson(db)
 
                 val outFile = File(context.filesDir, LIBRARY_FILE)
@@ -110,6 +123,7 @@ object LibraryScanner {
         parentUri: String?,
         folders: MutableList<LibraryFolder>,
         tracks: MutableList<LibraryTrack>,
+        playlistFiles: MutableList<File>,
         listener: ScanProgressListener?,
         totalFiles: Int,
         currentFileRef: IntArray
@@ -194,10 +208,13 @@ object LibraryScanner {
                         parentUri = folderUri,
                         folders = folders,
                         tracks = tracks,
+                        playlistFiles = playlistFiles,
                         listener = listener,
                         totalFiles = totalFiles,
                         currentFileRef = currentFileRef
                     )
+                } else if (isPlaylistFile(f.name)) {
+                    playlistFiles += f
                 } else if (isAudioFile(f.name)) {
 
                     // Update progress
@@ -259,6 +276,46 @@ object LibraryScanner {
                 lower.endsWith(".flac") ||
                 lower.endsWith(".wav") ||
                 lower.endsWith(".ogg")
+    }
+
+    private fun isPlaylistFile(name: String): Boolean {
+        val lower = name.lowercase()
+        return lower.endsWith(".m3u") || lower.endsWith(".m3u8")
+    }
+
+    private fun indexPlaylists(
+        playlistFiles: List<File>,
+        tracks: List<LibraryTrack>
+    ): List<LibraryPlaylist> {
+        val tracksByPath = tracks.associateBy { File(it.path).canonicalPath }
+
+        return playlistFiles.mapNotNull { playlistFile ->
+            try {
+                val trackUris = playlistFile.readLines()
+                    .asSequence()
+                    .map { it.trim().removePrefix("\uFEFF") }
+                    .filter { it.isNotEmpty() && !it.startsWith("#") }
+                    .mapNotNull { entry ->
+                        val trackFile = if (entry.startsWith("file:", ignoreCase = true)) {
+                            File(Uri.parse(entry).path ?: return@mapNotNull null)
+                        } else {
+                            val file = File(entry)
+                            if (file.isAbsolute) file else File(playlistFile.parentFile, entry)
+                        }
+                        tracksByPath[trackFile.canonicalPath]?.uri
+                    }
+                    .toList()
+
+                LibraryPlaylist(
+                    uri = playlistFile.toURI().toString(),
+                    name = playlistFile.nameWithoutExtension,
+                    trackUris = trackUris
+                )
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to index playlist ${playlistFile.absolutePath}", e)
+                null
+            }
+        }
     }
 
     private fun findCoverArtFile(dir: File): File? {

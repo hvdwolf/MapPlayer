@@ -14,8 +14,8 @@ android {
         applicationId = "xyz.hvdw.mapplayer"
         minSdk = 29  // Android 10
         targetSdk = 33
-        versionCode = 6
-        versionName = "1.1.2"
+        versionCode = 7
+        versionName = "1.2"
 
         // Only include the ABIs you want in the final APK
         ndk {

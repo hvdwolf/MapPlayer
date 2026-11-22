@@ -10,9 +10,12 @@ A folder-based only music player for Android based on the new Google [ExoPlayer]
 * Shows album art
 * Plays all Android supported formats (mp3/aac/flac, etc.)
 * Play File, Play folder, Play folder in random order
+* Optional playlist browsing and playback from indexed M3U/M3U8 playlists
+* Playlist entries are resolved relative to their playlist file or by absolute path; playlist names are independent of their containing folder names
 * In List view: "More" menu (vertical 3-dots menu) for "Play folder" and "Play folder in random order", in landscape mode it has the "More" menu left and right of folder texts (Against all design rules but handy in widescreen Android car units).
 * In Gallery view: tap folder icon to open the folder. Long-press icon to display popup menu with "Play folder" and "Play folder in random order".
 * Settings for Gallery view: Select thumbnail size 256px, 384px or 512px (screenshot below shows 256px)
+* Search indexed playlist tracks when "Use playlists instead of folders" is enabled
 * Shuffle mode: Play folder in random order
 * Search for a song/artist/album.
 * Runs on Android 10+
@@ -26,7 +29,7 @@ A folder-based only music player for Android based on the new Google [ExoPlayer]
 * No equalizer
 * No repeat options
 * No sorting options
-* No favorites, no artist based or album based view or sorting, no playlists. Just folders with content.
+* No favorites, no artist based or album based view or sorting
 
 ### Disclaimer
 I created this app entirely for myself and my wife. We have our entire collection in folders. We select a folder and use "Play" or "Play in random order". That's all. Repeat: That's all.  
